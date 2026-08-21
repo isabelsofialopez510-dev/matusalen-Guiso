@@ -51,6 +51,7 @@ import {
   Flame,
   Target
 } from 'lucide-react';
+import { WorldSelector } from './components/WorldSelector';
 import { World4Parabolic } from './components/World4Parabolic';
 import {
   getLorentzFactor,
@@ -89,7 +90,7 @@ export interface RaceRecord {
 
 export default function App() {
   // --- Navigation Screen State ---
-  const [activeScreen, setActiveScreen] = useState<'home' | 'simulation'>('home');
+  const [activeScreen, setActiveScreen] = useState<'home' | 'worlds' | 'simulation'>('home');
 
   // --- User Profile / Registration State ---
   const [userProfile, setUserProfile] = useState<{ name: string; age: string; grade: string } | null>(() => {
@@ -768,13 +769,12 @@ export default function App() {
             {/* Start Button */}
             <button
               onClick={() => {
-                setWorldMode('world1');
-                setActiveScreen('simulation');
+                setActiveScreen('worlds');
               }}
               className="w-full px-10 py-6 bg-gradient-to-r from-yellow-300 via-pink-400 via-emerald-400 to-cyan-400 border-5 border-black text-black font-black text-2xl sm:text-3xl uppercase tracking-wider rounded-3xl shadow-[10px_10px_0px_#000] hover:shadow-[16px_16px_0px_#00E5FF] hover:-translate-y-1.5 active:translate-x-1 active:translate-y-1 transition-all flex items-center justify-center gap-4 cursor-pointer group rotate-[-1deg]"
             >
               <Zap className="w-10 h-10 fill-yellow-300 text-black group-hover:animate-bounce" />
-              <span>¡ INICIAR SIMULACIÓN !</span>
+              <span>¡ ENTRAR A LOS 4 MUNDOS !</span>
               <ArrowRight className="w-10 h-10 text-black group-hover:translate-x-3 transition-transform" />
             </button>
 
@@ -991,17 +991,182 @@ export default function App() {
     );
   }
 
+  // --- WORLDS SELECTION SCREEN (HUB DE LOS 4 MUNDOS) ---
+  if (activeScreen === 'worlds') {
+    return (
+      <>
+        <WorldSelector
+          onSelectWorld={(world) => {
+            setWorldMode(world);
+            if (world === 'world1' || world === 'world2') setProjectileType('ball');
+            if (world === 'world3') setProjectileType('cube');
+            resetSimulation();
+            setActiveScreen('simulation');
+          }}
+          onGoHome={() => setActiveScreen('home')}
+          userProfile={userProfile}
+          onOpenProfileModal={() => {
+            setRegName(userProfile?.name || '');
+            setRegAge(userProfile?.age || '');
+            setRegGrade(userProfile?.grade || '🎒 Primaria / Infantil (6 - 11 años)');
+            setShowRegisterModal(true);
+          }}
+        />
+
+        {/* REGISTRATION MODAL */}
+        {showRegisterModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+            <div className="relative w-full max-w-lg bg-[#16123b] border-4 border-black rounded-3xl p-6 sm:p-8 shadow-[12px_12px_0px_#FF007F] text-white font-sans bg-[radial-gradient(#ec4899_1.5px,transparent_1.5px)] [background-size:20px_20px]">
+              {/* Close Button */}
+              <button
+                onClick={() => setShowRegisterModal(false)}
+                className="absolute top-4 right-4 w-10 h-10 bg-yellow-400 border-3 border-black text-black font-black text-xl rounded-2xl flex items-center justify-center shadow-[3px_3px_0px_#000] hover:bg-pink-500 hover:text-white transition-all cursor-pointer rotate-[3deg]"
+              >
+                <X className="w-6 h-6 stroke-[3]" />
+              </button>
+
+              {/* Modal Header */}
+              <div className="text-center space-y-2 mb-6">
+                <div className="inline-flex items-center gap-2 px-4 py-1 bg-yellow-400 border-2 border-black rounded-full text-black font-black text-xs uppercase shadow-[3px_3px_0px_#000] rotate-[-2deg]">
+                  <GraduationCap className="w-4 h-4 fill-black" />
+                  <span>PARA TODAS LAS EDADES 🌈</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-black uppercase text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-400 to-cyan-400 drop-shadow-[2px_2px_0px_#000]">
+                  📝 REGISTRO DE ESTUDIANTE
+                </h2>
+                <p className="text-xs font-mono text-amber-200 font-bold">
+                  Ingresa tu información para tu pasaporte de física multiversal
+                </p>
+              </div>
+
+              {/* Form */}
+              <form onSubmit={handleSaveProfile} className="space-y-5">
+                {/* Field 1: Nombre */}
+                <div className="space-y-1.5 text-left">
+                  <label className="block text-xs font-mono font-black uppercase tracking-wider text-yellow-300 flex items-center gap-1.5">
+                    <User className="w-4 h-4 text-pink-400" />
+                    <span>1. Nombre o Apodo:</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={regName}
+                    onChange={(e) => setRegName(e.target.value)}
+                    placeholder="Ej: Darwin, Marie Curie, Sofía, Profe Carlos..."
+                    className="w-full px-4 py-3 bg-[#0d0926] border-3 border-black rounded-2xl text-white font-bold placeholder-slate-400 focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/50 shadow-[4px_4px_0px_#000]"
+                  />
+                </div>
+
+                {/* Field 2: Edad */}
+                <div className="space-y-1.5 text-left">
+                  <label className="block text-xs font-mono font-black uppercase tracking-wider text-cyan-300 flex items-center gap-1.5">
+                    <Star className="w-4 h-4 text-yellow-300 fill-yellow-300" />
+                    <span>2. Edad (¡Para todas las edades!):</span>
+                  </label>
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      required
+                      value={regAge}
+                      onChange={(e) => setRegAge(e.target.value)}
+                      placeholder="Ej: 10 años, 16 años, Adulto, etc."
+                      className="w-full px-4 py-3 bg-[#0d0926] border-3 border-black rounded-2xl text-white font-bold placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/50 shadow-[4px_4px_0px_#000]"
+                    />
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {['7 años', '12 años', '16 años', '20+ años', 'Todas las edades 🌈'].map((ageOption) => (
+                        <button
+                          key={ageOption}
+                          type="button"
+                          onClick={() => setRegAge(ageOption)}
+                          className={`px-2.5 py-1 text-[11px] font-mono font-black rounded-xl border-2 border-black transition-all cursor-pointer ${
+                            regAge === ageOption
+                              ? 'bg-cyan-400 text-black shadow-[2px_2px_0px_#000]'
+                              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                          }`}
+                        >
+                          {ageOption}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Field 3: Grado */}
+                <div className="space-y-1.5 text-left">
+                  <label className="block text-xs font-mono font-black uppercase tracking-wider text-emerald-300 flex items-center gap-1.5">
+                    <GraduationCap className="w-4 h-4 text-emerald-400" />
+                    <span>3. Grado / Nivel Educativo:</span>
+                  </label>
+                  <select
+                    value={regGrade}
+                    onChange={(e) => setRegGrade(e.target.value)}
+                    className="w-full px-4 py-3 bg-[#0d0926] border-3 border-black rounded-2xl text-white font-bold focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50 shadow-[4px_4px_0px_#000] cursor-pointer"
+                  >
+                    <option value="🎒 Primaria / Infantil (6 - 11 años)">🎒 Primaria / Infantil (6 - 11 años)</option>
+                    <option value="📐 Secundaria / Educación Básica (12 - 15 años)">📐 Secundaria / Educación Básica (12 - 15 años)</option>
+                    <option value="🧪 Bachillerato / Preparatoria (16 - 18 años)">🧪 Bachillerato / Preparatoria (16 - 18 años)</option>
+                    <option value="🎓 Universidad / Educación Superior">🎓 Universidad / Educación Superior</option>
+                    <option value="🧠 Curioso / Autodidacta (Todas las edades)">🧠 Curioso / Autodidacta (Todas las edades)</option>
+                    <option value="✨ Otro / Personalizado">✨ Otro / Personalizado</option>
+                  </select>
+
+                  {regGrade === '✨ Otro / Personalizado' && (
+                    <input
+                      type="text"
+                      value={regCustomGrade}
+                      onChange={(e) => setRegCustomGrade(e.target.value)}
+                      placeholder="Escribe tu grado o nivel personalizado..."
+                      className="w-full mt-2 px-4 py-2.5 bg-[#0d0926] border-3 border-black rounded-2xl text-white font-bold placeholder-slate-400 focus:outline-none focus:border-emerald-400 shadow-[4px_4px_0px_#000]"
+                    />
+                  )}
+                </div>
+
+                {/* Submit button */}
+                <div className="pt-3">
+                  <button
+                    type="submit"
+                    className="w-full py-4 bg-gradient-to-r from-yellow-300 via-pink-400 to-cyan-400 border-4 border-black text-black font-black text-lg uppercase tracking-wider rounded-2xl shadow-[6px_6px_0px_#000] hover:shadow-[10px_10px_0px_#00E5FF] hover:-translate-y-1 active:translate-x-1 active:translate-y-1 transition-all flex items-center justify-center gap-2 cursor-pointer rotate-[-1deg]"
+                  >
+                    <Check className="w-6 h-6 stroke-[3]" />
+                    <span>¡ GUARDAR Y ENTRAR ! 🚀</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Toast Alert */}
+        {showSuccessToast && (
+          <div className="fixed top-6 right-6 z-50 bg-yellow-400 border-4 border-black text-black p-4 rounded-2xl shadow-[6px_6px_0px_#000] flex items-center gap-3 animate-bounce">
+            <div className="w-10 h-10 bg-pink-500 rounded-xl border-2 border-black flex items-center justify-center text-white text-xl font-black">
+              🌟
+            </div>
+            <div>
+              <p className="font-black text-sm uppercase">¡PERFIL GUARDADO CON ÉXITO!</p>
+              <p className="text-xs font-mono font-bold">Bienvenido/a, {userProfile?.name} 🎉</p>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
   return (
     <div
       className={`min-h-screen font-sans antialiased p-2 sm:p-4 md:p-6 transition-all duration-500 ${
         worldMode === 'world2'
           ? 'bg-[#060913] text-purple-100 selection:bg-[#a855f7] selection:text-white'
-          : 'bg-cover bg-center bg-fixed text-[#141414] selection:bg-[#FF4D00] selection:text-white'
+          : worldMode === 'world4'
+            ? 'bg-[#03150d] text-emerald-100 selection:bg-[#10b981] selection:text-black'
+            : 'bg-cover bg-center bg-fixed text-[#141414] selection:bg-[#FF4D00] selection:text-white'
       }`}
       style={{
         backgroundImage: worldMode === 'world1'
           ? `linear-gradient(to bottom, rgba(228, 227, 224, 0.86), rgba(228, 227, 224, 0.92)), url(${currentBg})`
-          : `radial-gradient(ellipse at top, #1e1b4b 0%, #060913 85%)`
+          : worldMode === 'world4'
+            ? `radial-gradient(ellipse at top, #064e3b 0%, #022c22 85%)`
+            : `radial-gradient(ellipse at top, #1e1b4b 0%, #060913 85%)`
       }}
     >
       {/* Top Header Navigation */}
@@ -1010,21 +1175,34 @@ export default function App() {
           ? 'bg-[#CECDBA] border-[#141414] shadow-[6px_6px_0px_#141414] text-[#141414]'
           : worldMode === 'world2'
             ? 'bg-[#0f172a] border-[#a855f7] shadow-[0_0_25px_rgba(168,85,247,0.35)] text-slate-100'
-            : 'bg-[#0f172a] border-amber-400 shadow-[0_0_25px_rgba(251,191,36,0.35)] text-slate-100'
+            : worldMode === 'world3'
+              ? 'bg-[#0f172a] border-amber-400 shadow-[0_0_25px_rgba(251,191,36,0.35)] text-slate-100'
+              : 'bg-[#062018] border-emerald-400 shadow-[0_0_25px_rgba(52,211,153,0.35)] text-slate-100'
       }`}>
         <div className="flex items-center space-x-3">
-          <button
-            onClick={() => setActiveScreen('home')}
-            className={`px-3 py-2 border-2 font-black text-xs uppercase flex items-center gap-1.5 transition-all cursor-pointer ${
-              worldMode === 'world1'
-                ? 'bg-[#FF4D00] text-white border-[#141414] shadow-[2px_2px_0px_#141414] hover:bg-[#e04400]'
-                : 'bg-gradient-to-r from-pink-500 to-purple-500 text-white border-purple-300 shadow-[0_0_10px_#a855f7]'
-            }`}
-            title="Volver a la Pantalla de Inicio"
-          >
-            <Home className="w-4 h-4" />
-            <span>Inicio</span>
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setActiveScreen('home')}
+              className={`px-3 py-2 border-2 font-black text-xs uppercase flex items-center gap-1.5 transition-all cursor-pointer ${
+                worldMode === 'world1'
+                  ? 'bg-[#FF4D00] text-white border-[#141414] shadow-[2px_2px_0px_#141414] hover:bg-[#e04400]'
+                  : 'bg-gradient-to-r from-pink-500 to-purple-500 text-white border-purple-300 shadow-[0_0_10px_#a855f7]'
+              }`}
+              title="Volver a la Pantalla de Inicio"
+            >
+              <Home className="w-4 h-4" />
+              <span>Inicio</span>
+            </button>
+
+            <button
+              onClick={() => setActiveScreen('worlds')}
+              className="px-3 py-2 bg-yellow-400 text-black border-2 border-black font-black text-xs uppercase flex items-center gap-1.5 shadow-[2px_2px_0px_#000] hover:bg-yellow-300 transition-all cursor-pointer rotate-[-1deg]"
+              title="Ver selector de los 4 mundos"
+            >
+              <LayoutGrid className="w-4 h-4" />
+              <span>Mundos</span>
+            </button>
+          </div>
           <div>
             <div className="flex items-center gap-2">
               <h1 className={`text-xl sm:text-2xl font-black uppercase tracking-tight ${worldMode === 'world1' ? 'text-[#141414]' : 'text-white'}`}>
@@ -1032,16 +1210,20 @@ export default function App() {
                   ? 'Mundo 1: Perspectivas Simultáneas (Relatividad Especial)'
                   : worldMode === 'world2'
                     ? 'Mundo 2: Simulador de MUA y MRU con Cubo en Pista Horizontal'
-                    : 'Mundo 3: Caída Libre (Roca de 5 kg vs Moneda de 5 g) — MUA y MRU'}
+                    : worldMode === 'world3'
+                      ? 'Mundo 3: Caída Libre (Roca de 5 kg vs Moneda de 5 g) — MUA y MRU'
+                      : 'Mundo 4: Tiro Parabólico 2D Balístico (Jardín Botánico)'}
               </h1>
               <span className={`px-2 py-0.5 text-[10px] font-black uppercase border-2 ${
                 worldMode === 'world1'
                   ? 'bg-[#FFEA00] text-[#141414] border-[#141414]'
                   : worldMode === 'world2'
                     ? 'bg-[#a855f7] text-white border-purple-300 shadow-[0_0_10px_rgba(168,85,247,0.5)]'
-                    : 'bg-amber-400 text-[#141414] border-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.5)]'
+                    : worldMode === 'world3'
+                      ? 'bg-amber-400 text-[#141414] border-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.5)]'
+                      : 'bg-emerald-400 text-black border-emerald-300 shadow-[0_0_10px_rgba(52,211,153,0.5)]'
               }`}>
-                {worldMode === 'world1' ? 'Mundo 1' : worldMode === 'world2' ? 'Mundo 2' : 'Mundo 3'}
+                {worldMode === 'world1' ? 'Mundo 1' : worldMode === 'world2' ? 'Mundo 2' : worldMode === 'world3' ? 'Mundo 3' : 'Mundo 4'}
               </span>
             </div>
 
@@ -1055,12 +1237,14 @@ export default function App() {
                 <span className="text-amber-300 font-extrabold">({userProfile.age} • {userProfile.grade})</span>
               </div>
             )}
-            <p className={`text-xs font-mono font-semibold ${worldMode === 'world1' ? 'text-gray-700' : worldMode === 'world2' ? 'text-purple-300' : 'text-amber-300'}`}>
+            <p className={`text-xs font-mono font-semibold ${worldMode === 'world1' ? 'text-gray-700' : worldMode === 'world2' ? 'text-purple-300' : worldMode === 'world3' ? 'text-amber-300' : 'text-emerald-300'}`}>
               {worldMode === 'world1'
                 ? '🌍 Mundo 1: Relatividad de Galileo y Einstein (Relatividad Especial 2D)'
                 : worldMode === 'world2'
                   ? '🧱 Mundo 2: Pista Horizontal — Comparativa de MUA (a = cte) vs MRU (v = cte)'
-                  : '🪨 Mundo 3: Caída Libre con Resistencia de Aire — Análisis MUA y Velocidad Terminal MRU'}
+                  : worldMode === 'world3'
+                    ? '🪨 Mundo 3: Caída Libre con Resistencia de Aire — Análisis MUA y Velocidad Terminal MRU'
+                    : '🎯 Mundo 4: Tiro Parabólico Balístico con v₀ = 28 m/s, θ = 16.3°, alcance X = 43 m y H_max = 3.3 m'}
             </p>
           </div>
         </div>
@@ -1104,6 +1288,17 @@ export default function App() {
               <Sparkles className="w-3 h-3" />
               <span>Mundo 3</span>
             </button>
+            <button
+              onClick={() => { setWorldMode('world4'); resetSimulation(); }}
+              className={`px-2.5 py-1 text-[11px] font-black uppercase transition-all flex items-center gap-1 ${
+                worldMode === 'world4'
+                  ? 'bg-emerald-400 text-[#141414] font-black shadow-[0_0_10px_#34d399]'
+                  : 'bg-gray-800 text-gray-300 hover:text-white'
+              }`}
+            >
+              <Target className="w-3 h-3" />
+              <span>Mundo 4</span>
+            </button>
           </div>
 
           <button
@@ -1111,7 +1306,9 @@ export default function App() {
             className={`px-3 py-1.5 font-bold text-xs uppercase border-2 transition-all flex items-center gap-1.5 ${
               worldMode === 'world1'
                 ? 'bg-white hover:bg-gray-100 text-[#141414] border-[#141414] shadow-[2px_2px_0px_#141414]'
-                : 'bg-[#a855f7] hover:bg-purple-600 text-white border-purple-300 shadow-[0_0_12px_rgba(168,85,247,0.4)]'
+                : worldMode === 'world4'
+                  ? 'bg-emerald-500 hover:bg-emerald-600 text-black font-black border-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.4)]'
+                  : 'bg-[#a855f7] hover:bg-purple-600 text-white border-purple-300 shadow-[0_0_12px_rgba(168,85,247,0.4)]'
             }`}
           >
             {isPlaying ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current" />}
@@ -1123,7 +1320,9 @@ export default function App() {
             className={`px-3 py-1.5 font-bold text-xs uppercase border-2 transition-all flex items-center gap-1.5 ${
               worldMode === 'world1'
                 ? 'bg-white hover:bg-gray-100 text-[#141414] border-[#141414] shadow-[2px_2px_0px_#141414]'
-                : 'bg-[#1e293b] hover:bg-slate-700 text-purple-200 border-[#a855f7]'
+                : worldMode === 'world4'
+                  ? 'bg-[#064e3b] hover:bg-[#065f46] text-emerald-200 border-emerald-400'
+                  : 'bg-[#1e293b] hover:bg-slate-700 text-purple-200 border-[#a855f7]'
             }`}
           >
             <RotateCcw className="w-3.5 h-3.5" />
