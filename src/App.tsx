@@ -55,6 +55,7 @@ import {
 } from 'lucide-react';
 import { WorldSelector } from './components/WorldSelector';
 import { World4Parabolic } from './components/World4Parabolic';
+import { AnaisAnnouncement } from './components/AnaisAnnouncement';
 import { sfx } from './utils/audioEffects';
 import {
   getLorentzFactor,
@@ -1451,6 +1452,22 @@ export default function App() {
 
       {/* Main Grid Viewport & Sidebar */}
       <div className="w-full max-w-7xl mx-auto space-y-6">
+        {/* Anuncio Didáctico Sobresaliente de Anais Watterson con animación y sonido */}
+        <AnaisAnnouncement
+          currentWorld={worldMode}
+          isPlaying={isPlaying}
+          onSwitchWorld={(targetWorld) => {
+            sfx.playPop();
+            setWorldMode(targetWorld);
+            if (targetWorld === 'world3' || targetWorld === 'world4') {
+              setProjectileType('cube');
+            } else {
+              setProjectileType('ball');
+            }
+            resetSimulation();
+          }}
+        />
+
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           
           {/* LEFT SIDEBAR: CONTROL PARAMETERS */}

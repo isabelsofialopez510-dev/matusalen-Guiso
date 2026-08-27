@@ -388,6 +388,66 @@ class SoundManager {
       osc.stop(st + 0.18);
     });
   }
+
+  // --- 12. ANAIS POP-IN ANNOUNCEMENT JINGLE ---
+  public playAnaisPop() {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    // Cheerful cute 3-note ascending arpeggio with a bubbly pop
+    const notes = [659.25, 880.0, 1318.5]; // E5, A5, E6
+    notes.forEach((freq, i) => {
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      const st = now + i * 0.07;
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, st);
+      osc.frequency.exponentialRampToValueAtTime(freq * 1.1, st + 0.1);
+
+      gain.gain.setValueAtTime(0.001, st);
+      gain.gain.linearRampToValueAtTime(0.25 * this.volume, st + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, st + 0.18);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(st);
+      osc.stop(st + 0.2);
+    });
+  }
+
+  // --- 13. WHOOSH EXIT EFFECT (Flies across the screen) ---
+  public playWhoosh() {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    const filter = this.ctx.createBiquadFilter();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(450, now);
+    osc.frequency.exponentialRampToValueAtTime(140, now + 0.35);
+
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(1200, now);
+    filter.frequency.exponentialRampToValueAtTime(300, now + 0.35);
+
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.18 * this.volume, now + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.36);
+  }
 }
 
 export const sfx = new SoundManager();
