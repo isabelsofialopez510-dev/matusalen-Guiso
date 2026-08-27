@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Globe,
   Rocket,
@@ -10,12 +10,15 @@ import {
   Zap,
   Flame,
   Award,
-  Wind
+  Wind,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import bgBusStop from '../assets/images/elmore_bus_stop_1787235581594.jpg';
 import bgSpace from '../assets/images/space_world_bg_1785850978031.jpg';
 import bgHouse from '../assets/images/suburban_house_bg_1785850447893.jpg';
 import bgGarden from '../assets/images/elmore_garden_bg_1787237438721.jpg';
+import { sfx } from '../utils/audioEffects';
 
 interface WorldSelectorProps {
   onSelectWorld: (world: 'world1' | 'world2' | 'world3' | 'world4') => void;
@@ -30,6 +33,17 @@ export const WorldSelector: React.FC<WorldSelectorProps> = ({
   userProfile,
   onOpenProfileModal,
 }) => {
+  const [isMuted, setIsMuted] = useState<boolean>(() => sfx.getMuted());
+
+  const toggleSound = () => {
+    const next = sfx.toggleMute();
+    setIsMuted(next);
+  };
+
+  const handleSelect = (world: 'world1' | 'world2' | 'world3' | 'world4') => {
+    sfx.playSparkle();
+    onSelectWorld(world);
+  };
   const worlds = [
     {
       id: 'world1' as const,
@@ -150,10 +164,26 @@ export const WorldSelector: React.FC<WorldSelectorProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={toggleSound}
+              className={`px-3 py-1.5 border-2 border-black rounded-2xl font-black text-xs uppercase flex items-center gap-1.5 shadow-[2px_2px_0px_#000] transition-all cursor-pointer ${
+                isMuted
+                  ? 'bg-red-500 text-white hover:bg-red-600'
+                  : 'bg-emerald-400 text-black hover:bg-emerald-300'
+              }`}
+              title={isMuted ? 'Activar Efectos de Sonido' : 'Silenciar Sonido'}
+            >
+              {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4 animate-pulse" />}
+              <span className="hidden sm:inline">{isMuted ? 'Mudo' : 'SFX ON'}</span>
+            </button>
+
             {userProfile ? (
               <div
-                onClick={onOpenProfileModal}
+                onClick={() => {
+                  sfx.playPop();
+                  onOpenProfileModal();
+                }}
                 className="flex items-center gap-2 bg-[#0d0926] border-2 border-pink-400 px-3.5 py-1.5 rounded-2xl text-xs font-mono font-bold cursor-pointer hover:border-yellow-400 transition-all shadow-[3px_3px_0px_#000]"
                 title="Clic para editar tu perfil"
               >
@@ -167,7 +197,10 @@ export const WorldSelector: React.FC<WorldSelectorProps> = ({
               </div>
             ) : (
               <button
-                onClick={onOpenProfileModal}
+                onClick={() => {
+                  sfx.playPop();
+                  onOpenProfileModal();
+                }}
                 className="px-4 py-2 bg-pink-500 border-2 border-black text-white font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_#000] hover:bg-pink-600 transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <User className="w-3.5 h-3.5 text-yellow-300" />
@@ -253,7 +286,7 @@ export const WorldSelector: React.FC<WorldSelectorProps> = ({
                   {/* Enter Button */}
                   <div className="pt-4 mt-auto">
                     <button
-                      onClick={() => onSelectWorld(w.id)}
+                      onClick={() => handleSelect(w.id)}
                       className={`w-full py-3.5 px-5 ${w.btnBg} border-3 border-black font-black text-base uppercase tracking-wider rounded-2xl shadow-[4px_4px_0px_#000] hover:shadow-[7px_7px_0px_#000] hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center justify-center gap-3 cursor-pointer group/btn`}
                     >
                       <Zap className="w-5 h-5 fill-current" />
@@ -275,7 +308,10 @@ export const WorldSelector: React.FC<WorldSelectorProps> = ({
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={onGoHome}
+              onClick={() => {
+                sfx.playPop();
+                onGoHome();
+              }}
               className="px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-black border-2 border-black rounded-xl font-black text-xs uppercase shadow-[2px_2px_0px_#000] cursor-pointer transition-all"
             >
               ⬅️ Portada de Inicio

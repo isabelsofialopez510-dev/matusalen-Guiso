@@ -49,10 +49,13 @@ import {
   Award,
   History,
   Flame,
-  Target
+  Target,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { WorldSelector } from './components/WorldSelector';
 import { World4Parabolic } from './components/World4Parabolic';
+import { sfx } from './utils/audioEffects';
 import {
   getLorentzFactor,
   getContractedLength,
@@ -228,6 +231,17 @@ export default function App() {
     setVelocityInput(v.toFixed(3));
   }, [v]);
 
+  // --- Audio State ---
+  const [isMuted, setIsMuted] = useState<boolean>(() => sfx.getMuted());
+  const toggleSound = () => {
+    const next = sfx.toggleMute();
+    setIsMuted(next);
+  };
+
+  const lastPhaseCycleRef = useRef<number>(0);
+  const w3RockLandedRef = useRef<boolean>(false);
+  const w3CoinLandedRef = useRef<boolean>(false);
+
   // Handle velocity manual input change
   const handleVelocityChange = (val: string) => {
     setVelocityInput(val);
@@ -241,6 +255,7 @@ export default function App() {
 
   // Reset clock accumulators and trails
   const resetSimulation = () => {
+    sfx.playBoing();
     tGroundRef.current = 0;
     tPrimeRef.current = 0;
     setTPrime(0);
@@ -250,10 +265,32 @@ export default function App() {
     scrollXRef.current = 0;
     setScrollX(0);
     w2LoggedRunRef.current = false;
+    w3RockLandedRef.current = false;
+    w3CoinLandedRef.current = false;
+  };
+
+  // Toggle Play / Pause with dynamic SFX
+  const handleTogglePlay = () => {
+    if (!isPlaying) {
+      if (worldMode === 'world1') {
+        sfx.playWarpWhoosh();
+      } else if (worldMode === 'world2') {
+        sfx.playCountdown(true);
+        sfx.playRocketThrust();
+      } else if (worldMode === 'world3') {
+        sfx.playFallWhistle(1.5);
+      } else {
+        sfx.playPop();
+      }
+    } else {
+      sfx.playPop();
+    }
+    setIsPlaying(!isPlaying);
   };
 
   // Switch projectile type
   const handleProjectileTypeChange = (type: 'light' | 'ball' | 'cube') => {
+    sfx.playPop();
     setProjectileType(type);
     resetSimulation();
   };
@@ -395,6 +432,19 @@ export default function App() {
             return [...trail, newPoint].slice(-400);
           });
         }
+
+        // Audio feedback for World 1 bounce cycles
+        if (worldMode === 'world1') {
+          const normPhase = (nextProperTime % cycle) / cycle;
+          if (lastPhaseCycleRef.current > 0.85 && normPhase < 0.15) {
+            if (projectileType === 'light') {
+              sfx.playLaserPing();
+            } else {
+              sfx.playBoing();
+            }
+          }
+          lastPhaseCycleRef.current = normPhase;
+        }
       }
 
       requestRef.current = requestAnimationFrame(updatePhysics);
@@ -530,6 +580,7 @@ export default function App() {
 
     if (isFirstArrived && !w2LoggedRunRef.current && tGround > 0.05) {
       w2LoggedRunRef.current = true;
+      sfx.playVictoryFanfare();
       const newRecord: RaceRecord = {
         id: Math.random().toString(36).substring(2, 9),
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
@@ -581,6 +632,19 @@ export default function App() {
     v_term: coinRes.vTerm || 999,
   };
 
+  // World 3 Impact Sound Detection Effect
+  useEffect(() => {
+    if (worldMode !== 'world3') return;
+    if (w3Rock.impacted && !w3RockLandedRef.current && tGround > 0.05) {
+      w3RockLandedRef.current = true;
+      sfx.playImpact('heavy');
+    }
+    if (w3Coin.impacted && !w3CoinLandedRef.current && tGround > 0.05) {
+      w3CoinLandedRef.current = true;
+      sfx.playImpact('light');
+    }
+  }, [w3Rock.impacted, w3Coin.impacted, worldMode, tGround]);
+
   const w3MaxTime = Math.max(rockRes.impactTime, coinRes.impactTime, 1);
   const w3ChartData = Array.from({ length: 31 }, (_, i) => {
     const timePoint = (w3MaxTime / 30) * i;
@@ -598,6 +662,29 @@ export default function App() {
   if (activeScreen === 'home') {
     return (
       <div className="min-h-screen w-full bg-[#0d0926] text-white flex flex-col justify-between selection:bg-pink-500 selection:text-white p-4 md:p-8 relative overflow-hidden font-sans bg-[radial-gradient(#ec4899_2px,transparent_2px)] [background-size:28px_28px]">
+        {/* Top Header Bar with Sound Controls */}
+        <div className="w-full max-w-5xl mx-auto flex items-center justify-between z-20 relative">
+          <div className="flex items-center gap-2">
+            <span className="px-3.5 py-1 bg-yellow-400 border-2 border-black rounded-xl text-black font-black text-xs uppercase shadow-[3px_3px_0px_#000] rotate-[-1deg] flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>FÍSICA EDUCATIVA INTERACTIVA</span>
+            </span>
+          </div>
+
+          <button
+            onClick={toggleSound}
+            className={`px-4 py-2 border-3 border-black rounded-2xl font-black text-xs uppercase flex items-center gap-2 shadow-[4px_4px_0px_#000] transition-all cursor-pointer hover:scale-105 active:scale-95 ${
+              isMuted
+                ? 'bg-red-500 text-white hover:bg-red-600'
+                : 'bg-emerald-400 text-black hover:bg-emerald-300'
+            }`}
+            title={isMuted ? 'Activar Efectos de Sonido' : 'Silenciar Efectos de Sonido'}
+          >
+            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4 animate-pulse" />}
+            <span>{isMuted ? '🔇 Audio Mudo' : '🔊 Efectos SFX ON'}</span>
+          </button>
+        </div>
+
         {/* Ambient Glows & Maximalist Radial Gradients */}
         <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-gradient-to-r from-pink-500 via-purple-500 to-yellow-400 rounded-full blur-[150px] opacity-50 pointer-events-none animate-pulse" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-gradient-to-r from-cyan-400 via-emerald-400 to-purple-600 rounded-full blur-[150px] opacity-50 pointer-events-none animate-pulse" />
@@ -769,6 +856,7 @@ export default function App() {
             {/* Start Button */}
             <button
               onClick={() => {
+                sfx.playWarpWhoosh();
                 setActiveScreen('worlds');
               }}
               className="w-full px-10 py-6 bg-gradient-to-r from-yellow-300 via-pink-400 via-emerald-400 to-cyan-400 border-5 border-black text-black font-black text-2xl sm:text-3xl uppercase tracking-wider rounded-3xl shadow-[10px_10px_0px_#000] hover:shadow-[16px_16px_0px_#00E5FF] hover:-translate-y-1.5 active:translate-x-1 active:translate-y-1 transition-all flex items-center justify-center gap-4 cursor-pointer group rotate-[-1deg]"
@@ -781,6 +869,7 @@ export default function App() {
             {/* BOTÓN DE REGISTRO */}
             <button
               onClick={() => {
+                sfx.playPop();
                 setRegName(userProfile?.name || '');
                 setRegAge(userProfile?.age || '');
                 setRegGrade(userProfile?.grade || '🎒 Primaria / Infantil (6 - 11 años)');
@@ -1251,13 +1340,27 @@ export default function App() {
 
         {/* Action Controls & World Switcher Header */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Audio Toggle Button */}
+          <button
+            onClick={toggleSound}
+            className={`px-3 py-1.5 font-bold text-xs uppercase border-2 transition-all flex items-center gap-1.5 shadow-[2px_2px_0px_#000] cursor-pointer ${
+              isMuted
+                ? 'bg-red-500 text-white hover:bg-red-600 border-black'
+                : 'bg-emerald-400 text-black hover:bg-emerald-300 border-black'
+            }`}
+            title={isMuted ? 'Activar Efectos de Sonido' : 'Silenciar Efectos de Sonido'}
+          >
+            {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5 animate-pulse" />}
+            <span className="hidden sm:inline">{isMuted ? 'Mudo' : 'SFX ON'}</span>
+          </button>
+
           {/* World Selector Header Tabs */}
           <div className={`flex items-center p-1 gap-1 border-2 ${
             worldMode === 'world1' ? 'bg-[#141414] border-[#141414] shadow-[2px_2px_0px_#141414]' : 'bg-[#030712] border-[#a855f7] shadow-[0_0_15px_rgba(168,85,247,0.3)]'
           }`}>
             <button
-              onClick={() => { setWorldMode('world1'); setProjectileType('ball'); resetSimulation(); }}
-              className={`px-2.5 py-1 text-[11px] font-black uppercase transition-all flex items-center gap-1 ${
+              onClick={() => { sfx.playPop(); setWorldMode('world1'); setProjectileType('ball'); resetSimulation(); }}
+              className={`px-2.5 py-1 text-[11px] font-black uppercase transition-all flex items-center gap-1 cursor-pointer ${
                 worldMode === 'world1'
                   ? 'bg-[#FFEA00] text-[#141414]'
                   : 'bg-gray-800 text-gray-300 hover:text-white'
@@ -1267,8 +1370,8 @@ export default function App() {
               <span>Mundo 1</span>
             </button>
             <button
-              onClick={() => { setWorldMode('world2'); setProjectileType('ball'); resetSimulation(); }}
-              className={`px-2.5 py-1 text-[11px] font-black uppercase transition-all flex items-center gap-1 ${
+              onClick={() => { sfx.playPop(); setWorldMode('world2'); setProjectileType('ball'); resetSimulation(); }}
+              className={`px-2.5 py-1 text-[11px] font-black uppercase transition-all flex items-center gap-1 cursor-pointer ${
                 worldMode === 'world2'
                   ? 'bg-[#a855f7] text-white shadow-[0_0_10px_#a855f7]'
                   : 'bg-gray-800 text-gray-300 hover:text-white'
@@ -1278,8 +1381,8 @@ export default function App() {
               <span>Mundo 2</span>
             </button>
             <button
-              onClick={() => { setWorldMode('world3'); setProjectileType('cube'); resetSimulation(); }}
-              className={`px-2.5 py-1 text-[11px] font-black uppercase transition-all flex items-center gap-1 ${
+              onClick={() => { sfx.playPop(); setWorldMode('world3'); setProjectileType('cube'); resetSimulation(); }}
+              className={`px-2.5 py-1 text-[11px] font-black uppercase transition-all flex items-center gap-1 cursor-pointer ${
                 worldMode === 'world3'
                   ? 'bg-amber-400 text-[#141414] font-black shadow-[0_0_10px_#fbbf24]'
                   : 'bg-gray-800 text-gray-300 hover:text-white'
@@ -1289,8 +1392,8 @@ export default function App() {
               <span>Mundo 3</span>
             </button>
             <button
-              onClick={() => { setWorldMode('world4'); resetSimulation(); }}
-              className={`px-2.5 py-1 text-[11px] font-black uppercase transition-all flex items-center gap-1 ${
+              onClick={() => { sfx.playPop(); setWorldMode('world4'); resetSimulation(); }}
+              className={`px-2.5 py-1 text-[11px] font-black uppercase transition-all flex items-center gap-1 cursor-pointer ${
                 worldMode === 'world4'
                   ? 'bg-emerald-400 text-[#141414] font-black shadow-[0_0_10px_#34d399]'
                   : 'bg-gray-800 text-gray-300 hover:text-white'
@@ -1302,8 +1405,8 @@ export default function App() {
           </div>
 
           <button
-            onClick={() => setIsPlaying(!isPlaying)}
-            className={`px-3 py-1.5 font-bold text-xs uppercase border-2 transition-all flex items-center gap-1.5 ${
+            onClick={handleTogglePlay}
+            className={`px-3 py-1.5 font-bold text-xs uppercase border-2 transition-all flex items-center gap-1.5 cursor-pointer ${
               worldMode === 'world1'
                 ? 'bg-white hover:bg-gray-100 text-[#141414] border-[#141414] shadow-[2px_2px_0px_#141414]'
                 : worldMode === 'world4'
@@ -1317,7 +1420,7 @@ export default function App() {
 
           <button
             onClick={resetSimulation}
-            className={`px-3 py-1.5 font-bold text-xs uppercase border-2 transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 font-bold text-xs uppercase border-2 transition-all flex items-center gap-1.5 cursor-pointer ${
               worldMode === 'world1'
                 ? 'bg-white hover:bg-gray-100 text-[#141414] border-[#141414] shadow-[2px_2px_0px_#141414]'
                 : worldMode === 'world4'
@@ -1330,8 +1433,11 @@ export default function App() {
           </button>
 
           <button
-            onClick={freezeCurrentTrail}
-            className={`px-3 py-1.5 font-bold text-xs uppercase border-2 transition-all flex items-center gap-1.5 ${
+            onClick={() => {
+              sfx.playSparkle();
+              freezeCurrentTrail();
+            }}
+            className={`px-3 py-1.5 font-bold text-xs uppercase border-2 transition-all flex items-center gap-1.5 cursor-pointer ${
               worldMode === 'world1'
                 ? 'bg-[#FF4D00] text-white hover:bg-[#e04400] border-[#141414] shadow-[2px_2px_0px_#141414]'
                 : 'bg-[#00E5FF] text-[#0f172a] hover:bg-cyan-300 border-cyan-400 font-black shadow-[0_0_10px_#00E5FF]'

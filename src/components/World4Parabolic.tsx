@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Target, RotateCcw, Play, Pause, Sparkles, CheckCircle, Heart, Star } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Target, RotateCcw, Play, Pause, Sparkles, CheckCircle, Heart, Star, Volume2, VolumeX, Flame } from 'lucide-react';
 import bgGarden from '../assets/images/elmore_garden_bg_1787237438721.jpg';
 import gumballGlobeImg from '../assets/images/gumball_machine_globe_1787237193159.jpg';
+import { sfx } from '../utils/audioEffects';
 
 interface World4ParabolicProps {
   isPlaying: boolean;
@@ -24,11 +25,15 @@ export const World4Parabolic: React.FC<World4ParabolicProps> = ({
   const [projectile, setProjectile] = useState<'gumball_globe' | 'gumball' | 'darwin' | 'rocket' | 'cannonball'>('gumball_globe');
   const [targetDist, setTargetDist] = useState<number>(43); // 43 meters
   const [showFormulas, setShowFormulas] = useState<boolean>(true);
+  const [isMuted, setIsMuted] = useState<boolean>(() => sfx.getMuted());
+  const [celebrationParticles, setCelebrationParticles] = useState<boolean>(false);
 
   // Time state for animation
   const [tSim, setTSim] = useState<number>(0);
   const [hasLanded, setHasLanded] = useState<boolean>(false);
   const [landedTime, setLandedTime] = useState<number>(0);
+  const prevPlayingRef = useRef<boolean>(false);
+  const soundPlayedOnLandingRef = useRef<boolean>(false);
 
   // --- Exact Mathematical Kinematics ---
   const angleRad = (angleDeg * Math.PI) / 180;
@@ -47,15 +52,24 @@ export const World4Parabolic: React.FC<World4ParabolicProps> = ({
   // Check if target is hit (within 2.5 meters)
   const hitTarget = Math.abs(xMax - targetDist) <= 2.5;
 
+  const toggleSound = () => {
+    const next = sfx.toggleMute();
+    setIsMuted(next);
+  };
+
   // Reset launch
   const handleReset = () => {
+    sfx.playBoing();
     setTSim(0);
     setHasLanded(false);
     setLandedTime(0);
+    soundPlayedOnLandingRef.current = false;
+    setCelebrationParticles(false);
   };
 
   // Set exact requested problem preset
   const applyRequestedPreset = () => {
+    sfx.playSparkle();
     setV0(28);
     setAngleDeg(16.3);
     setY0(0);
@@ -63,6 +77,19 @@ export const World4Parabolic: React.FC<World4ParabolicProps> = ({
     setTargetDist(43);
     setProjectile('gumball_globe');
     handleReset();
+  };
+
+  // Handle Play / Launch toggle
+  const handleTogglePlay = () => {
+    if (!isPlaying) {
+      sfx.playLaunch();
+      if (hasLanded) {
+        handleReset();
+      }
+    } else {
+      sfx.playPop();
+    }
+    setIsPlaying(!isPlaying);
   };
 
   // Animation frame loop
@@ -78,6 +105,16 @@ export const World4Parabolic: React.FC<World4ParabolicProps> = ({
           if (nextT >= tFlight) {
             setHasLanded(true);
             setLandedTime(tFlight);
+            if (!soundPlayedOnLandingRef.current) {
+              soundPlayedOnLandingRef.current = true;
+              if (hitTarget) {
+                sfx.playImpact('target');
+                sfx.playVictoryFanfare();
+                setCelebrationParticles(true);
+              } else {
+                sfx.playImpact('heavy');
+              }
+            }
             return tFlight;
           }
           return nextT;
@@ -89,7 +126,7 @@ export const World4Parabolic: React.FC<World4ParabolicProps> = ({
 
     animationFrameId = requestAnimationFrame(step);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [isPlaying, hasLanded, tFlight]);
+  }, [isPlaying, hasLanded, tFlight, hitTarget]);
 
   // Current Kinematic State
   const curT = hasLanded ? landedTime : tSim;
@@ -169,8 +206,21 @@ export const World4Parabolic: React.FC<World4ParabolicProps> = ({
 
           <div className="flex items-center space-x-2">
             <button
+              onClick={toggleSound}
+              className={`px-3 py-2 border-2 font-black text-xs uppercase flex items-center gap-1.5 transition-all ${
+                isMuted
+                  ? 'bg-red-500/20 text-red-300 border-red-400 hover:bg-red-500/30'
+                  : 'bg-emerald-500/20 text-emerald-300 border-emerald-400 hover:bg-emerald-500/30'
+              }`}
+              title={isMuted ? 'Activar Efectos de Sonido' : 'Silenciar'}
+            >
+              {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5 animate-pulse" />}
+              <span>{isMuted ? 'Mudo' : 'SFX'}</span>
+            </button>
+
+            <button
               onClick={applyRequestedPreset}
-              className="px-3 py-2 bg-amber-400 hover:bg-amber-300 text-[#0b0e1b] font-black text-xs uppercase border-2 border-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.5)] flex items-center gap-1.5 transition-all"
+              className="px-3 py-2 bg-amber-400 hover:bg-amber-300 text-[#0b0e1b] font-black text-xs uppercase border-2 border-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.5)] flex items-center gap-1.5 transition-all cursor-pointer"
               title="Restablecer a valores exactos: v0=28m/s, t=1.6s, X=43m, H=3.3m"
             >
               <Sparkles className="w-3.5 h-3.5" />
@@ -178,8 +228,8 @@ export const World4Parabolic: React.FC<World4ParabolicProps> = ({
             </button>
 
             <button
-              onClick={() => setIsPlaying(!isPlaying)}
-              className={`px-4 py-2 border-2 font-black text-xs uppercase shadow-[0_0_12px_rgba(52,211,153,0.4)] flex items-center gap-2 transition-all ${
+              onClick={handleTogglePlay}
+              className={`px-4 py-2 border-2 font-black text-xs uppercase shadow-[0_0_12px_rgba(52,211,153,0.4)] flex items-center gap-2 transition-all cursor-pointer ${
                 isPlaying
                   ? 'bg-amber-400 hover:bg-amber-300 text-[#0b0e1b] border-amber-300'
                   : 'bg-emerald-400 hover:bg-emerald-300 text-[#0b0e1b] border-emerald-300 animate-pulse'
@@ -191,7 +241,7 @@ export const World4Parabolic: React.FC<World4ParabolicProps> = ({
 
             <button
               onClick={handleReset}
-              className="px-4 py-2 bg-[#1e293b] hover:bg-slate-700 text-emerald-200 font-bold text-xs uppercase border-2 border-emerald-400 flex items-center gap-2 transition-all"
+              className="px-4 py-2 bg-[#1e293b] hover:bg-slate-700 text-emerald-200 font-bold text-xs uppercase border-2 border-emerald-400 flex items-center gap-2 transition-all cursor-pointer"
             >
               <RotateCcw className="w-4 h-4" />
               <span>Recargar</span>
