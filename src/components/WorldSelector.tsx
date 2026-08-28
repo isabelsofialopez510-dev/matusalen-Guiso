@@ -21,7 +21,7 @@ import bgGarden from '../assets/images/elmore_garden_bg_1787237438721.jpg';
 import { sfx } from '../utils/audioEffects';
 
 interface WorldSelectorProps {
-  onSelectWorld: (world: 'world1' | 'world2' | 'world3' | 'world4') => void;
+  onSelectWorld: (world: 'world1' | 'world2' | 'world3' | 'world4' | 'free') => void;
   onGoHome: () => void;
   userProfile: { name: string; age: string; grade: string } | null;
   onOpenProfileModal: () => void;
@@ -40,7 +40,7 @@ export const WorldSelector: React.FC<WorldSelectorProps> = ({
     setIsMuted(next);
   };
 
-  const handleSelect = (world: 'world1' | 'world2' | 'world3' | 'world4') => {
+  const handleSelect = (world: 'world1' | 'world2' | 'world3' | 'world4' | 'free') => {
     sfx.playSparkle();
     onSelectWorld(world);
   };
@@ -49,89 +49,111 @@ export const WorldSelector: React.FC<WorldSelectorProps> = ({
       id: 'world1' as const,
       num: '1',
       title: 'Mundo 1: Perspectivas Simultáneas',
-      subtitle: 'Relatividad Especial 1D / 2D & Autobús de Einstein',
-      badge: '🚀 RELATIVIDAD & CINEMÁTICA',
+      subtitle: 'Gumball & Relatividad Especial 1D / 2D en el Autobús',
+      badge: '🐱 MUNDO 1 • GUMBALL & AZUL RELATIVISTA',
       bgImg: bgBusStop,
-      accentBorder: 'border-yellow-400',
-      accentBg: 'bg-yellow-400',
-      accentText: 'text-yellow-300',
-      glowColor: 'shadow-[8px_8px_0px_#facc15]',
-      hoverGlow: 'hover:shadow-[14px_14px_0px_#FF007F]',
-      btnBg: 'bg-gradient-to-r from-yellow-300 to-amber-400 text-black hover:from-yellow-200 hover:to-amber-300',
+      accentBorder: 'border-sky-400',
+      accentBg: 'bg-sky-500',
+      accentText: 'text-sky-300',
+      glowColor: 'shadow-[8px_8px_0px_#0284c7]',
+      hoverGlow: 'hover:shadow-[14px_14px_0px_#38bdf8]',
+      btnBg: 'bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-600 text-white hover:from-sky-300 hover:to-blue-400',
       icon: Globe,
       features: [
-        '🚌 Autobús relativista a v = 0.80c en las calles de Elmore',
-        '⚡ Transformación de Lorentz, dilatación temporal y contracción de longitud',
-        '👁️ Doble marco de referencia: pasajero en movimiento vs observador en tierra',
-        '💫 Trayectorias de luz rectilíneas vs parábolas clásicas y relativistas',
+        '🐱 Gumball en el autobús observando el tiro vertical 1D (Marco S\')',
+        '🚌 Doble marco simultáneo: Interior 1D vs Exterior 2D Parabólico (Marco S)',
+        '⚡ Transformaciones galileanas y descomposición cinemática vectorial',
+        '💫 Tonalidades de Azul: Zafiro, Celeste, Marino, Cian Eléctrico y Pastel',
       ],
-      tagline: 'Compara la perspectiva interna y externa a velocidades relativistas.',
+      tagline: 'Gumball compara la perspectiva interna y externa del autobús de Elmore.',
     },
     {
       id: 'world2' as const,
       num: '2',
       title: 'Mundo 2: Pista Horizontal MUA vs MRU',
-      subtitle: 'Carrera Cinemática 1D de Cubos en Pista Rectilínea',
-      badge: '🏎️ CINEMÁTICA 1D EN PISTA',
+      subtitle: 'Anais & Carrera Cinemática 1D en Tonos Rosados',
+      badge: '🐰 MUNDO 2 • ANAIS & ROSADO CINEMÁTICO',
       bgImg: bgSpace,
-      accentBorder: 'border-purple-400',
-      accentBg: 'bg-purple-500',
-      accentText: 'text-purple-300',
-      glowColor: 'shadow-[8px_8px_0px_#a855f7]',
-      hoverGlow: 'hover:shadow-[14px_14px_0px_#38bdf8]',
-      btnBg: 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-400 hover:to-pink-400',
+      accentBorder: 'border-pink-400',
+      accentBg: 'bg-pink-500',
+      accentText: 'text-pink-300',
+      glowColor: 'shadow-[8px_8px_0px_#ec4899]',
+      hoverGlow: 'hover:shadow-[14px_14px_0px_#f472b6]',
+      btnBg: 'bg-gradient-to-r from-pink-500 via-rose-500 to-fuchsia-600 text-white hover:from-pink-400 hover:to-rose-400',
       icon: Rocket,
       features: [
-        '🏁 Comparativa cara a cara: Cubo MUA (a = cte) vs Cubo MRU (v = cte)',
-        '📈 Gráficas cinemáticas en vivo: posición x(t), velocidad v(t) y aceleración a(t)',
-        '⏱️ Cronometraje oficial de llegada, telemetría y foto-finish',
-        '📝 Logbook y registro histórico persistente de todas las carreras',
+        '🐰 Anais analiza la carrera: Cubo MUA (a = cte) vs Cubo MRU (v = cte)',
+        '📈 Gráficas cinemáticas en vivo en rosa: posición x(t), v(t) y a(t)',
+        '⏱️ Cronometraje oficial de foto-finish, telemetría y punto de intersección',
+        '🌸 Tonalidades de Rosado: Fucsia, Magenta, Chicle, Rosa Pastel y Neón',
       ],
-      tagline: 'Analiza el duelo entre velocidad uniforme y aceleración constante.',
+      tagline: 'Duelo cinemático entre velocidad constante y aceleración constante en pista rosa.',
     },
     {
       id: 'world3' as const,
       num: '3',
       title: 'Mundo 3: Caída Libre & Resistencia al Aire',
-      subtitle: 'Gumball vs Darwin en las Torres de Elmore (Galileo vs Aristóteles)',
-      badge: '🍎 CAÍDA LIBRE & DINÁMICA',
+      subtitle: 'Darwin en las Torres de Elmore en Tonos Naranjas',
+      badge: '🐟 MUNDO 3 • DARWIN & NARANJA DINÁMICO',
       bgImg: bgHouse,
-      accentBorder: 'border-amber-400',
-      accentBg: 'bg-amber-400',
-      accentText: 'text-amber-300',
-      glowColor: 'shadow-[8px_8px_0px_#fbbf24]',
-      hoverGlow: 'hover:shadow-[14px_14px_0px_#00E5FF]',
-      btnBg: 'bg-gradient-to-r from-amber-400 to-cyan-400 text-black hover:from-amber-300 hover:to-cyan-300',
+      accentBorder: 'border-orange-400',
+      accentBg: 'bg-orange-500',
+      accentText: 'text-orange-300',
+      glowColor: 'shadow-[8px_8px_0px_#ea580c]',
+      hoverGlow: 'hover:shadow-[14px_14px_0px_#fb923c]',
+      btnBg: 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 text-white hover:from-orange-400 hover:to-amber-400',
       icon: Sparkles,
       features: [
-        '🪂 Gumball (5 kg) y Darwin (5 g) lanzados desde alturas de 10 a 150 metros',
+        '🐟 Darwin lanza la roca (5 kg) y moneda (5 g) desde alturas de 10 a 150 m',
         '⚡ Modo Vacío (0 Pa): Caída simultánea sin importar la masa (m·a = m·g)',
         '💨 Modo Con Aire (1 atm): Arrastre de fluidos y velocidad terminal límite MRU',
-        '🪐 Entornos gravitacionales: Tierra (9.81), Luna (1.62) y Júpiter (24.79 m/s²)',
+        '🍊 Tonalidades de Naranja: Ámbar, Mandarina, Coral, Melocotón y Óxido Cálido',
       ],
-      tagline: 'Demuestra experimentalmente el principio de equivalencia de Galileo.',
+      tagline: 'Demuestra experimentalmente el principio de equivalencia de Galileo con Darwin.',
     },
     {
       id: 'world4' as const,
       num: '4',
       title: 'Mundo 4: Tiro Parabólico 2D Balístico',
-      subtitle: 'Darwin Lanzador de Chicles en el Jardín Botánico de Elmore',
-      badge: '🎯 TIRO PARABÓLICO 2D',
+      subtitle: 'Lanzamiento Balístico en el Jardín en Tonos Verdes',
+      badge: '🎯 MUNDO 4 • VERDE BALÍSTICO 2D',
       bgImg: bgGarden,
       accentBorder: 'border-emerald-400',
-      accentBg: 'bg-emerald-400',
+      accentBg: 'bg-emerald-500',
       accentText: 'text-emerald-300',
-      glowColor: 'shadow-[8px_8px_0px_#34d399]',
-      hoverGlow: 'hover:shadow-[14px_14px_0px_#f43f5e]',
-      btnBg: 'bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 text-black hover:from-emerald-300 hover:to-cyan-300',
+      glowColor: 'shadow-[8px_8px_0px_#059669]',
+      hoverGlow: 'hover:shadow-[14px_14px_0px_#34d399]',
+      btnBg: 'bg-gradient-to-r from-emerald-500 via-teal-500 to-green-600 text-white hover:from-emerald-400 hover:to-green-400',
       icon: Target,
       features: [
-        '🍬 Lanzamiento balístico de esfera de chicles con v₀ = 28 m/s a θ = 16.3°',
-        '📐 Cinemática 2D desacoplada: MRU en eje X (v_0x) + MUA en eje Y (g = 9.8 m/s²)',
-        '🎯 Diana balística en X = 43 metros con altura máxima H_max = 3.3 metros',
-        '🎨 Fondo animado del Jardín Botánico, estela de dulces y stickers de celebración',
+        '🍬 Lanzamiento balístico con v₀ = 28 m/s a θ = 16.3°, X = 43 m, H_max = 3.3 m',
+        '📐 Cinemática 2D desacoplada: MRU horizontal + MUA gravitacional vertical',
+        '🎯 Diana balística, estela parabólica y telemetría vectorial en verde',
+        '🌿 Tonalidades de Verde: Esmeralda, Menta, Bosque, Lima, Jade y Salvia',
       ],
-      tagline: 'Calcula la trayectoria parabólica y acierta a la diana en Elmore.',
+      tagline: 'Calcula la parábola 2D y acierta a la diana en el exuberante jardín verde.',
+    },
+    {
+      id: 'free' as const,
+      num: '★',
+      title: 'Mundo Libre: Sandbox de Física',
+      subtitle: 'Laboratorio Abierto N-Cuerpos, Gravitación & Colisiones Libres',
+      badge: '🌌 MUNDO LIBRE • EXPERIMENTACIÓN ILIMITADA',
+      bgImg: bgSpace,
+      accentBorder: 'border-cyan-400',
+      accentBg: 'bg-cyan-400',
+      accentText: 'text-cyan-300',
+      glowColor: 'shadow-[8px_8px_0px_#06b6d4]',
+      hoverGlow: 'hover:shadow-[14px_14px_0px_#38bdf8]',
+      btnBg: 'bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 text-black hover:from-cyan-300 hover:to-blue-400',
+      icon: Sparkles,
+      features: [
+        '🐱 Crea personajes y objetos: Gumball, Darwin, Anais, Rocas, Cohetes, Bombas y Agujeros Negros',
+        '🎛️ Modifica constantes universales: Gravedad (0g a Júpiter), Viento, Elasticidad y Cargas',
+        '✏️ Herramientas interactivas: Slingshot, Dibujar Rampas de rebote y Ondas de choque radiales',
+        '📊 Telemetría en vivo: Conservación del momento lineal (P), Energía Cinética (Ek) y Choques',
+      ],
+      tagline: 'Experimenta sin reglas con la física del universo de Elmore.',
     },
   ];
 
@@ -214,7 +236,7 @@ export const WorldSelector: React.FC<WorldSelectorProps> = ({
         <div className="text-center space-y-2 py-2">
           <div className="inline-flex items-center gap-2 px-5 py-1.5 bg-gradient-to-r from-yellow-300 via-pink-400 to-cyan-400 border-3 border-black rounded-full text-black font-black text-xs uppercase shadow-[4px_4px_0px_#000] rotate-[-1deg]">
             <Zap className="w-4 h-4 fill-black" />
-            <span>EXPLORA LAS 4 DIMENSIONES DE FÍSICA CLÁSICA Y MODERNA</span>
+            <span>EXPLORA LOS 4 MUNDOS & EL MUNDO LIBRE SANDBOX DE FÍSICA</span>
             <Zap className="w-4 h-4 fill-black" />
           </div>
           <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-white drop-shadow-[4px_4px_0px_#000]">

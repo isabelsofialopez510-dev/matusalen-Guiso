@@ -3,6 +3,8 @@ import { Target, RotateCcw, Play, Pause, Sparkles, CheckCircle, Heart, Star, Vol
 import bgGarden from '../assets/images/elmore_garden_bg_1787237438721.jpg';
 import gumballGlobeImg from '../assets/images/gumball_machine_globe_1787237193159.jpg';
 import { sfx } from '../utils/audioEffects';
+import { PixelSlider } from './PixelSlider';
+import { PixelGumball, PixelDarwin, PixelAnais } from './PixelCharacters';
 
 interface World4ParabolicProps {
   isPlaying: boolean;
@@ -711,103 +713,91 @@ export const World4Parabolic: React.FC<World4ParabolicProps> = ({
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 font-mono text-xs">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs">
           {/* Initial Velocity Slider (28 m/s) */}
-          <div className="space-y-1.5 bg-[#131728] p-3 rounded border border-emerald-500/30">
-            <div className="flex justify-between items-center text-emerald-300">
-              <span className="font-bold">Velocidad (v₀):</span>
-              <strong className="bg-emerald-500 text-[#0b0e1b] px-2 py-0.5 rounded font-black">{v0} m/s</strong>
-            </div>
-            <input
-              type="range"
-              min="10"
-              max="50"
-              step="1"
-              value={v0}
-              onChange={(e) => {
-                setV0(parseFloat(e.target.value));
-                handleReset();
-              }}
-              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-400"
-            />
-            <div className="flex justify-between text-[9px] text-slate-400">
-              <span>10 m/s</span>
-              <span className="text-amber-300 font-bold">28 m/s (Requerido)</span>
-              <span>50 m/s</span>
-            </div>
-          </div>
+          <PixelSlider
+            label="Velocidad Inicial (v₀)"
+            character="darwin"
+            value={v0}
+            min={10}
+            max={50}
+            step={1}
+            unit="m/s"
+            onChange={(newVal) => {
+              setV0(newVal);
+              handleReset();
+            }}
+            description="Rapidez de salida del cañón de chicles"
+            highlightFormula="v₀x = v₀ cos θ"
+            presetTags={[
+              { label: '20 m/s', value: 20 },
+              { label: '28 m/s ⭐', value: 28 },
+              { label: '40 m/s', value: 40 },
+            ]}
+          />
 
           {/* Angle Slider (16.3°) */}
-          <div className="space-y-1.5 bg-[#131728] p-3 rounded border border-emerald-500/30">
-            <div className="flex justify-between items-center text-emerald-300">
-              <span className="font-bold">Ángulo de Lanzamiento (θ):</span>
-              <strong className="bg-emerald-500 text-[#0b0e1b] px-2 py-0.5 rounded font-black">{angleDeg.toFixed(1)}°</strong>
-            </div>
-            <input
-              type="range"
-              min="5"
-              max="85"
-              step="0.1"
-              value={angleDeg}
-              onChange={(e) => {
-                setAngleDeg(parseFloat(e.target.value));
-                handleReset();
-              }}
-              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-400"
-            />
-            <div className="flex justify-between text-[9px] text-slate-400">
-              <span>5°</span>
-              <span className="text-amber-300 font-bold">16.3° (1.6s / 43m)</span>
-              <span>85°</span>
-            </div>
-          </div>
+          <PixelSlider
+            label="Ángulo Lanzamiento (θ)"
+            character="gumball"
+            value={angleDeg}
+            min={5}
+            max={85}
+            step={0.1}
+            unit="°"
+            onChange={(newVal) => {
+              setAngleDeg(newVal);
+              handleReset();
+            }}
+            description="Inclinación balística respecto a la horizontal"
+            highlightFormula="v₀y = v₀ sin θ"
+            presetTags={[
+              { label: '16.3° ⭐', value: 16.3 },
+              { label: '45° (Alcance)', value: 45 },
+              { label: '60°', value: 60 },
+            ]}
+          />
 
           {/* Initial Height (0 m) */}
-          <div className="space-y-1.5 bg-[#131728] p-3 rounded border border-emerald-500/30">
-            <div className="flex justify-between items-center text-emerald-300">
-              <span className="font-bold">Altura Inicial (y₀):</span>
-              <strong className="bg-emerald-500 text-[#0b0e1b] px-2 py-0.5 rounded font-black">{y0} m</strong>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="20"
-              step="1"
-              value={y0}
-              onChange={(e) => {
-                setY0(parseFloat(e.target.value));
-                handleReset();
-              }}
-              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-400"
-            />
-            <div className="flex justify-between text-[9px] text-slate-400">
-              <span className="text-amber-300 font-bold">0m (Suelo)</span>
-              <span>10m</span>
-              <span>20m</span>
-            </div>
-          </div>
+          <PixelSlider
+            label="Altura Inicial (y₀)"
+            character="anais"
+            value={y0}
+            min={0}
+            max={20}
+            step={1}
+            unit="m"
+            onChange={(newVal) => {
+              setY0(newVal);
+              handleReset();
+            }}
+            description="Cota de elevación de la plataforma de disparo"
+            highlightFormula="y(t) = y₀ + v₀y·t - ½gt²"
+            presetTags={[
+              { label: '0m (Suelo)', value: 0 },
+              { label: '5m', value: 5 },
+              { label: '10m', value: 10 },
+            ]}
+          />
 
           {/* Target Distance (43 m) */}
-          <div className="space-y-1.5 bg-[#131728] p-3 rounded border border-emerald-500/30">
-            <div className="flex justify-between items-center text-emerald-300">
-              <span className="font-bold">Diana (Objetivo):</span>
-              <strong className="bg-red-500 text-white px-2 py-0.5 rounded font-black">{targetDist} m</strong>
-            </div>
-            <input
-              type="range"
-              min="15"
-              max="90"
-              step="1"
-              value={targetDist}
-              onChange={(e) => setTargetDist(parseFloat(e.target.value))}
-              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-red-400"
-            />
-            <div className="flex justify-between text-[9px] text-slate-400">
-              <span>15 m</span>
-              <span className="text-amber-300 font-bold">43 m (Impacto)</span>
-              <span>90 m</span>
-            </div>
-          </div>
+          <PixelSlider
+            label="Diana Objetivo (X_target)"
+            character="darwin"
+            value={targetDist}
+            min={15}
+            max={90}
+            step={1}
+            unit="m"
+            onChange={(newVal) => setTargetDist(newVal)}
+            description="Posición del blanco en el jardín de Elmore"
+            highlightFormula="X = v₀x · t_vuelo"
+            presetTags={[
+              { label: '30m', value: 30 },
+              { label: '43m ⭐', value: 43 },
+              { label: '65m', value: 65 },
+            ]}
+          />
         </div>
 
         {/* Projectile Selector */}

@@ -55,7 +55,10 @@ import {
 } from 'lucide-react';
 import { WorldSelector } from './components/WorldSelector';
 import { World4Parabolic } from './components/World4Parabolic';
+import { World5FreeSandbox } from './components/World5FreeSandbox';
 import { AnaisAnnouncement } from './components/AnaisAnnouncement';
+import { PixelSlider } from './components/PixelSlider';
+import { PixelGumball, PixelDarwin, PixelAnais, PixelPenny, PixelTrioBanner } from './components/PixelCharacters';
 import { sfx } from './utils/audioEffects';
 import {
   getLorentzFactor,
@@ -133,7 +136,7 @@ export default function App() {
   };
 
   // --- Simulation State ---
-  const [worldMode, setWorldMode] = useState<'world1' | 'world2' | 'world3' | 'world4'>('world1'); // World 1 (Relatividad Bus), World 2 (Cubo MUA vs MRU), World 3 (Caída Libre Roca vs Moneda), World 4 (Tiro Parabólico 2D)
+  const [worldMode, setWorldMode] = useState<'world1' | 'world2' | 'world3' | 'world4' | 'free'>('world1'); // World 1 (Relatividad Bus), World 2 (Cubo MUA vs MRU), World 3 (Caída Libre), World 4 (Tiro Parabólico), Free (Sandbox)
   const [v, setV] = useState<number>(0.80); // Speed of the bus (v/c)
   const [velocityInput, setVelocityInput] = useState<string>('0.80');
   const [viewMode, setViewMode] = useState<'split' | 'bus' | 'ground'>('split');
@@ -1245,29 +1248,39 @@ export default function App() {
   return (
     <div
       className={`min-h-screen font-sans antialiased p-2 sm:p-4 md:p-6 transition-all duration-500 ${
-        worldMode === 'world2'
-          ? 'bg-[#060913] text-purple-100 selection:bg-[#a855f7] selection:text-white'
-          : worldMode === 'world4'
-            ? 'bg-[#03150d] text-emerald-100 selection:bg-[#10b981] selection:text-black'
-            : 'bg-cover bg-center bg-fixed text-[#141414] selection:bg-[#FF4D00] selection:text-white'
+        worldMode === 'world1'
+          ? 'bg-[#06182e] text-sky-100 selection:bg-sky-500 selection:text-white'
+          : worldMode === 'world2'
+            ? 'bg-[#180410] text-pink-100 selection:bg-pink-500 selection:text-white'
+            : worldMode === 'world3'
+              ? 'bg-[#190601] text-orange-100 selection:bg-orange-500 selection:text-white'
+              : worldMode === 'world4'
+                ? 'bg-[#02160e] text-emerald-100 selection:bg-emerald-500 selection:text-black'
+                : 'bg-[#050314] text-cyan-100 selection:bg-cyan-400 selection:text-black'
       }`}
       style={{
         backgroundImage: worldMode === 'world1'
-          ? `linear-gradient(to bottom, rgba(228, 227, 224, 0.86), rgba(228, 227, 224, 0.92)), url(${currentBg})`
-          : worldMode === 'world4'
-            ? `radial-gradient(ellipse at top, #064e3b 0%, #022c22 85%)`
-            : `radial-gradient(ellipse at top, #1e1b4b 0%, #060913 85%)`
+          ? `radial-gradient(ellipse at top, #0c4a6e 0%, #031c36 85%)`
+          : worldMode === 'world2'
+            ? `radial-gradient(ellipse at top, #4c0529 0%, #180410 85%)`
+            : worldMode === 'world3'
+              ? `radial-gradient(ellipse at top, #451a03 0%, #190601 85%)`
+              : worldMode === 'world4'
+                ? `radial-gradient(ellipse at top, #064e3b 0%, #02160e 85%)`
+                : `radial-gradient(ellipse at top, #083344 0%, #050314 85%)`
       }}
     >
       {/* Top Header Navigation */}
       <header className={`w-full max-w-7xl mx-auto border-4 p-4 mb-6 flex flex-col md:flex-row items-center justify-between gap-4 transition-all ${
         worldMode === 'world1'
-          ? 'bg-[#CECDBA] border-[#141414] shadow-[6px_6px_0px_#141414] text-[#141414]'
+          ? 'bg-[#072144] border-sky-400 shadow-[0_0_25px_rgba(56,189,248,0.35)] text-sky-100'
           : worldMode === 'world2'
-            ? 'bg-[#0f172a] border-[#a855f7] shadow-[0_0_25px_rgba(168,85,247,0.35)] text-slate-100'
+            ? 'bg-[#28051a] border-pink-400 shadow-[0_0_25px_rgba(244,114,182,0.35)] text-pink-100'
             : worldMode === 'world3'
-              ? 'bg-[#0f172a] border-amber-400 shadow-[0_0_25px_rgba(251,191,36,0.35)] text-slate-100'
-              : 'bg-[#062018] border-emerald-400 shadow-[0_0_25px_rgba(52,211,153,0.35)] text-slate-100'
+              ? 'bg-[#2c0e04] border-orange-400 shadow-[0_0_25px_rgba(251,146,60,0.35)] text-orange-100'
+              : worldMode === 'world4'
+                ? 'bg-[#04281a] border-emerald-400 shadow-[0_0_25px_rgba(52,211,153,0.35)] text-emerald-100'
+                : 'bg-[#081a2e] border-cyan-400 shadow-[0_0_25px_rgba(6,182,212,0.35)] text-cyan-100'
       }`}>
         <div className="flex items-center space-x-3">
           <div className="flex items-center gap-1.5">
@@ -1275,8 +1288,14 @@ export default function App() {
               onClick={() => setActiveScreen('home')}
               className={`px-3 py-2 border-2 font-black text-xs uppercase flex items-center gap-1.5 transition-all cursor-pointer ${
                 worldMode === 'world1'
-                  ? 'bg-[#FF4D00] text-white border-[#141414] shadow-[2px_2px_0px_#141414] hover:bg-[#e04400]'
-                  : 'bg-gradient-to-r from-pink-500 to-purple-500 text-white border-purple-300 shadow-[0_0_10px_#a855f7]'
+                  ? 'bg-sky-500 hover:bg-sky-400 text-white border-sky-300 shadow-[0_0_12px_rgba(56,189,248,0.4)]'
+                  : worldMode === 'world2'
+                    ? 'bg-pink-500 hover:bg-pink-400 text-white border-pink-300 shadow-[0_0_12px_rgba(244,114,182,0.4)]'
+                    : worldMode === 'world3'
+                      ? 'bg-orange-500 hover:bg-orange-400 text-white border-orange-300 shadow-[0_0_12px_rgba(251,146,60,0.4)]'
+                      : worldMode === 'world4'
+                        ? 'bg-emerald-500 hover:bg-emerald-400 text-black border-emerald-300 shadow-[0_0_12px_rgba(52,211,153,0.4)]'
+                        : 'bg-cyan-500 hover:bg-cyan-400 text-black border-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
               }`}
               title="Volver a la Pantalla de Inicio"
             >
@@ -1286,8 +1305,18 @@ export default function App() {
 
             <button
               onClick={() => setActiveScreen('worlds')}
-              className="px-3 py-2 bg-yellow-400 text-black border-2 border-black font-black text-xs uppercase flex items-center gap-1.5 shadow-[2px_2px_0px_#000] hover:bg-yellow-300 transition-all cursor-pointer rotate-[-1deg]"
-              title="Ver selector de los 4 mundos"
+              className={`px-3 py-2 border-2 font-black text-xs uppercase flex items-center gap-1.5 shadow-[2px_2px_0px_#000] transition-all cursor-pointer ${
+                worldMode === 'world1'
+                  ? 'bg-sky-400 text-black hover:bg-sky-300 border-black'
+                  : worldMode === 'world2'
+                    ? 'bg-pink-400 text-black hover:bg-pink-300 border-black'
+                    : worldMode === 'world3'
+                      ? 'bg-orange-400 text-black hover:bg-orange-300 border-black'
+                      : worldMode === 'world4'
+                        ? 'bg-emerald-400 text-black hover:bg-emerald-300 border-black'
+                        : 'bg-yellow-400 text-black hover:bg-yellow-300 border-black'
+              }`}
+              title="Ver selector de los 4 mundos y mundo libre"
             >
               <LayoutGrid className="w-4 h-4" />
               <span>Mundos</span>
@@ -1295,25 +1324,34 @@ export default function App() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className={`text-xl sm:text-2xl font-black uppercase tracking-tight ${worldMode === 'world1' ? 'text-[#141414]' : 'text-white'}`}>
+              {worldMode === 'world1' && <PixelGumball size={32} animate={isPlaying} className="mr-1" />}
+              {worldMode === 'world2' && <PixelAnais size={30} animate={isPlaying} className="mr-1" />}
+              {worldMode === 'world3' && <PixelDarwin size={30} animate={isPlaying} className="mr-1" />}
+              {worldMode === 'world4' && <PixelPenny size={30} className="mr-1 animate-pulse" />}
+
+              <h1 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-white">
                 {worldMode === 'world1'
-                  ? 'Mundo 1: Perspectivas Simultáneas (Relatividad Especial)'
+                  ? 'Mundo 1: Perspectivas Simultáneas con Gumball'
                   : worldMode === 'world2'
-                    ? 'Mundo 2: Simulador de MUA y MRU con Cubo en Pista Horizontal'
+                    ? 'Mundo 2: Pista Horizontal MUA vs MRU con Anais'
                     : worldMode === 'world3'
-                      ? 'Mundo 3: Caída Libre (Roca de 5 kg vs Moneda de 5 g) — MUA y MRU'
-                      : 'Mundo 4: Tiro Parabólico 2D Balístico (Jardín Botánico)'}
+                      ? 'Mundo 3: Caída Libre & Resistencia al Aire con Darwin'
+                      : worldMode === 'world4'
+                        ? 'Mundo 4: Tiro Parabólico 2D Balístico (Jardín Verde)'
+                        : 'Mundo Libre: Laboratorio de Física y Sandbox Abierto'}
               </h1>
               <span className={`px-2 py-0.5 text-[10px] font-black uppercase border-2 ${
                 worldMode === 'world1'
-                  ? 'bg-[#FFEA00] text-[#141414] border-[#141414]'
+                  ? 'bg-sky-500 text-white border-sky-300 shadow-[0_0_10px_rgba(56,189,248,0.6)]'
                   : worldMode === 'world2'
-                    ? 'bg-[#a855f7] text-white border-purple-300 shadow-[0_0_10px_rgba(168,85,247,0.5)]'
+                    ? 'bg-pink-500 text-white border-pink-300 shadow-[0_0_10px_rgba(244,114,182,0.6)]'
                     : worldMode === 'world3'
-                      ? 'bg-amber-400 text-[#141414] border-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.5)]'
-                      : 'bg-emerald-400 text-black border-emerald-300 shadow-[0_0_10px_rgba(52,211,153,0.5)]'
+                      ? 'bg-orange-500 text-white border-orange-300 shadow-[0_0_10px_rgba(251,146,60,0.6)]'
+                      : worldMode === 'world4'
+                        ? 'bg-emerald-400 text-black border-emerald-300 shadow-[0_0_10px_rgba(52,211,153,0.6)]'
+                        : 'bg-cyan-400 text-black border-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.6)]'
               }`}>
-                {worldMode === 'world1' ? 'Mundo 1' : worldMode === 'world2' ? 'Mundo 2' : worldMode === 'world3' ? 'Mundo 3' : 'Mundo 4'}
+                {worldMode === 'world1' ? 'Mundo 1 • Azul' : worldMode === 'world2' ? 'Mundo 2 • Rosado' : worldMode === 'world3' ? 'Mundo 3 • Naranja' : worldMode === 'world4' ? 'Mundo 4 • Verde' : 'Mundo Libre'}
               </span>
             </div>
 
@@ -1327,14 +1365,16 @@ export default function App() {
                 <span className="text-amber-300 font-extrabold">({userProfile.age} • {userProfile.grade})</span>
               </div>
             )}
-            <p className={`text-xs font-mono font-semibold ${worldMode === 'world1' ? 'text-gray-700' : worldMode === 'world2' ? 'text-purple-300' : worldMode === 'world3' ? 'text-amber-300' : 'text-emerald-300'}`}>
+            <p className={`text-xs font-mono font-semibold ${worldMode === 'world1' ? 'text-sky-200' : worldMode === 'world2' ? 'text-pink-200' : worldMode === 'world3' ? 'text-orange-200' : worldMode === 'world4' ? 'text-emerald-200' : 'text-cyan-200'}`}>
               {worldMode === 'world1'
-                ? '🌍 Mundo 1: Relatividad de Galileo y Einstein (Relatividad Especial 2D)'
+                ? '🌍 Mundo 1: Perspectivas Simultáneas — Marco S\' (Interior 1D) vs Marco S (Exterior 2D) con Gumball'
                 : worldMode === 'world2'
-                  ? '🧱 Mundo 2: Pista Horizontal — Comparativa de MUA (a = cte) vs MRU (v = cte)'
+                  ? '🧱 Mundo 2: Pista Horizontal — Comparativa de MUA (a = cte) vs MRU (v = cte) con Anais'
                   : worldMode === 'world3'
-                    ? '🪨 Mundo 3: Caída Libre con Resistencia de Aire — Análisis MUA y Velocidad Terminal MRU'
-                    : '🎯 Mundo 4: Tiro Parabólico Balístico con v₀ = 28 m/s, θ = 16.3°, alcance X = 43 m y H_max = 3.3 m'}
+                    ? '🪨 Mundo 3: Caída Libre con Resistencia de Aire — Análisis MUA y Velocidad Terminal MRU con Darwin'
+                    : worldMode === 'world4'
+                      ? '🎯 Mundo 4: Tiro Parabólico Balístico con v₀ = 28 m/s, θ = 16.3°, alcance X = 43 m y H_max = 3.3 m'
+                      : '🌌 Mundo Libre: Sandbox con Gravedad variable, Cuerpos N-Partículas, Dibujo de Rampas y Conservación de Energía'}
             </p>
           </div>
         </div>
@@ -1357,51 +1397,70 @@ export default function App() {
 
           {/* World Selector Header Tabs */}
           <div className={`flex items-center p-1 gap-1 border-2 ${
-            worldMode === 'world1' ? 'bg-[#141414] border-[#141414] shadow-[2px_2px_0px_#141414]' : 'bg-[#030712] border-[#a855f7] shadow-[0_0_15px_rgba(168,85,247,0.3)]'
+            worldMode === 'world1'
+              ? 'bg-[#041527] border-sky-400 shadow-[0_0_15px_rgba(56,189,248,0.3)]'
+              : worldMode === 'world2'
+                ? 'bg-[#1b0312] border-pink-400 shadow-[0_0_15px_rgba(244,114,182,0.3)]'
+                : worldMode === 'world3'
+                  ? 'bg-[#180501] border-orange-400 shadow-[0_0_15px_rgba(251,146,60,0.3)]'
+                  : worldMode === 'world4'
+                    ? 'bg-[#02150e] border-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.3)]'
+                    : 'bg-[#030712] border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.3)]'
           }`}>
             <button
               onClick={() => { sfx.playPop(); setWorldMode('world1'); setProjectileType('ball'); resetSimulation(); }}
               className={`px-2.5 py-1 text-[11px] font-black uppercase transition-all flex items-center gap-1 cursor-pointer ${
                 worldMode === 'world1'
-                  ? 'bg-[#FFEA00] text-[#141414]'
-                  : 'bg-gray-800 text-gray-300 hover:text-white'
+                  ? 'bg-sky-500 text-white shadow-[0_0_12px_#38bdf8]'
+                  : 'bg-slate-900/80 text-sky-200/70 hover:text-white hover:bg-sky-950'
               }`}
             >
               <Globe className="w-3 h-3" />
-              <span>Mundo 1</span>
+              <span>M1 Azul</span>
             </button>
             <button
               onClick={() => { sfx.playPop(); setWorldMode('world2'); setProjectileType('ball'); resetSimulation(); }}
               className={`px-2.5 py-1 text-[11px] font-black uppercase transition-all flex items-center gap-1 cursor-pointer ${
                 worldMode === 'world2'
-                  ? 'bg-[#a855f7] text-white shadow-[0_0_10px_#a855f7]'
-                  : 'bg-gray-800 text-gray-300 hover:text-white'
+                  ? 'bg-pink-500 text-white shadow-[0_0_12px_#f472b6]'
+                  : 'bg-slate-900/80 text-pink-200/70 hover:text-white hover:bg-pink-950'
               }`}
             >
               <Rocket className="w-3 h-3" />
-              <span>Mundo 2</span>
+              <span>M2 Rosa</span>
             </button>
             <button
               onClick={() => { sfx.playPop(); setWorldMode('world3'); setProjectileType('cube'); resetSimulation(); }}
               className={`px-2.5 py-1 text-[11px] font-black uppercase transition-all flex items-center gap-1 cursor-pointer ${
                 worldMode === 'world3'
-                  ? 'bg-amber-400 text-[#141414] font-black shadow-[0_0_10px_#fbbf24]'
-                  : 'bg-gray-800 text-gray-300 hover:text-white'
+                  ? 'bg-orange-500 text-white font-black shadow-[0_0_12px_#fb923c]'
+                  : 'bg-slate-900/80 text-orange-200/70 hover:text-white hover:bg-orange-950'
               }`}
             >
               <Sparkles className="w-3 h-3" />
-              <span>Mundo 3</span>
+              <span>M3 Naranja</span>
             </button>
             <button
               onClick={() => { sfx.playPop(); setWorldMode('world4'); resetSimulation(); }}
               className={`px-2.5 py-1 text-[11px] font-black uppercase transition-all flex items-center gap-1 cursor-pointer ${
                 worldMode === 'world4'
-                  ? 'bg-emerald-400 text-[#141414] font-black shadow-[0_0_10px_#34d399]'
-                  : 'bg-gray-800 text-gray-300 hover:text-white'
+                  ? 'bg-emerald-500 text-black font-black shadow-[0_0_12px_#34d399]'
+                  : 'bg-slate-900/80 text-emerald-200/70 hover:text-white hover:bg-emerald-950'
               }`}
             >
               <Target className="w-3 h-3" />
-              <span>Mundo 4</span>
+              <span>M4 Verde</span>
+            </button>
+            <button
+              onClick={() => { sfx.playPop(); setWorldMode('free'); resetSimulation(); }}
+              className={`px-2.5 py-1 text-[11px] font-black uppercase transition-all flex items-center gap-1 cursor-pointer ${
+                worldMode === 'free'
+                  ? 'bg-cyan-400 text-black font-black shadow-[0_0_12px_#06b6d4]'
+                  : 'bg-slate-900/80 text-cyan-200/70 hover:text-white hover:bg-cyan-950'
+              }`}
+            >
+              <Sparkles className="w-3 h-3 text-yellow-300" />
+              <span>Libre</span>
             </button>
           </div>
 
@@ -1409,10 +1468,14 @@ export default function App() {
             onClick={handleTogglePlay}
             className={`px-3 py-1.5 font-bold text-xs uppercase border-2 transition-all flex items-center gap-1.5 cursor-pointer ${
               worldMode === 'world1'
-                ? 'bg-white hover:bg-gray-100 text-[#141414] border-[#141414] shadow-[2px_2px_0px_#141414]'
-                : worldMode === 'world4'
-                  ? 'bg-emerald-500 hover:bg-emerald-600 text-black font-black border-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.4)]'
-                  : 'bg-[#a855f7] hover:bg-purple-600 text-white border-purple-300 shadow-[0_0_12px_rgba(168,85,247,0.4)]'
+                ? 'bg-sky-500 hover:bg-sky-400 text-white border-sky-300 shadow-[0_0_10px_rgba(56,189,248,0.5)]'
+                : worldMode === 'world2'
+                  ? 'bg-pink-500 hover:bg-pink-400 text-white border-pink-300 shadow-[0_0_10px_rgba(244,114,182,0.5)]'
+                  : worldMode === 'world3'
+                    ? 'bg-orange-500 hover:bg-orange-400 text-white border-orange-300 shadow-[0_0_10px_rgba(251,146,60,0.5)]'
+                    : worldMode === 'world4'
+                      ? 'bg-emerald-500 hover:bg-emerald-400 text-black font-black border-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.5)]'
+                      : 'bg-cyan-400 hover:bg-cyan-300 text-black font-black border-cyan-200 shadow-[0_0_12px_rgba(6,182,212,0.5)]'
             }`}
           >
             {isPlaying ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current" />}
@@ -1423,10 +1486,14 @@ export default function App() {
             onClick={resetSimulation}
             className={`px-3 py-1.5 font-bold text-xs uppercase border-2 transition-all flex items-center gap-1.5 cursor-pointer ${
               worldMode === 'world1'
-                ? 'bg-white hover:bg-gray-100 text-[#141414] border-[#141414] shadow-[2px_2px_0px_#141414]'
-                : worldMode === 'world4'
-                  ? 'bg-[#064e3b] hover:bg-[#065f46] text-emerald-200 border-emerald-400'
-                  : 'bg-[#1e293b] hover:bg-slate-700 text-purple-200 border-[#a855f7]'
+                ? 'bg-[#08284e] hover:bg-[#0c3666] text-sky-200 border-sky-400'
+                : worldMode === 'world2'
+                  ? 'bg-[#350722] hover:bg-[#4a0a30] text-pink-200 border-pink-400'
+                  : worldMode === 'world3'
+                    ? 'bg-[#3b1206] hover:bg-[#4f1808] text-orange-200 border-orange-400'
+                    : worldMode === 'world4'
+                      ? 'bg-[#064e3b] hover:bg-[#065f46] text-emerald-200 border-emerald-400'
+                      : 'bg-[#1e293b] hover:bg-slate-700 text-purple-200 border-[#a855f7]'
             }`}
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -1440,8 +1507,14 @@ export default function App() {
             }}
             className={`px-3 py-1.5 font-bold text-xs uppercase border-2 transition-all flex items-center gap-1.5 cursor-pointer ${
               worldMode === 'world1'
-                ? 'bg-[#FF4D00] text-white hover:bg-[#e04400] border-[#141414] shadow-[2px_2px_0px_#141414]'
-                : 'bg-[#00E5FF] text-[#0f172a] hover:bg-cyan-300 border-cyan-400 font-black shadow-[0_0_10px_#00E5FF]'
+                ? 'bg-sky-400 text-slate-900 hover:bg-sky-300 border-sky-200 shadow-[0_0_10px_#38bdf8]'
+                : worldMode === 'world2'
+                  ? 'bg-pink-400 text-slate-900 hover:bg-pink-300 border-pink-200 shadow-[0_0_10px_#f472b6]'
+                  : worldMode === 'world3'
+                    ? 'bg-orange-400 text-slate-900 hover:bg-orange-300 border-orange-200 shadow-[0_0_10px_#fb923c]'
+                    : worldMode === 'world4'
+                      ? 'bg-emerald-400 text-slate-900 hover:bg-emerald-300 border-emerald-200 shadow-[0_0_10px_#34d399]'
+                      : 'bg-[#00E5FF] text-[#0f172a] hover:bg-cyan-300 border-cyan-400 font-black shadow-[0_0_10px_#00E5FF]'
             }`}
           >
             <Sparkles className="w-3.5 h-3.5" />
@@ -1471,86 +1544,113 @@ export default function App() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           
           {/* LEFT SIDEBAR: CONTROL PARAMETERS */}
-          <section className={`lg:col-span-1 border-4 divide-y-4 flex flex-col justify-between transition-all ${
+          <section className={`lg:col-span-1 border-4 divide-y-4 flex flex-col justify-between transition-all rounded-lg ${
             worldMode === 'world1'
-              ? 'bg-[#CECDBA] border-[#141414] shadow-[6px_6px_0px_#141414] divide-[#141414] text-[#141414]'
+              ? 'bg-[#06182e] border-sky-400 shadow-[0_0_25px_rgba(56,189,248,0.35)] divide-sky-900 text-sky-100'
               : worldMode === 'world2'
-                ? 'bg-[#0b0e1b] border-[#a855f7] shadow-[0_0_25px_rgba(168,85,247,0.3)] divide-[#1e293b] text-purple-100'
+                ? 'bg-[#180410] border-pink-400 shadow-[0_0_25px_rgba(244,114,182,0.35)] divide-pink-900 text-pink-100'
                 : worldMode === 'world3'
-                  ? 'bg-[#0b0e1b] border-amber-400 shadow-[0_0_25px_rgba(251,191,36,0.3)] divide-[#1e293b] text-amber-100'
-                  : 'bg-[#0b0e1b] border-emerald-400 shadow-[0_0_25px_rgba(52,211,153,0.3)] divide-[#1e293b] text-emerald-100'
+                  ? 'bg-[#190601] border-orange-400 shadow-[0_0_25px_rgba(251,146,60,0.35)] divide-orange-900 text-orange-100'
+                  : worldMode === 'world4'
+                    ? 'bg-[#02160e] border-emerald-400 shadow-[0_0_25px_rgba(52,211,153,0.35)] divide-emerald-900 text-emerald-100'
+                    : 'bg-[#06111f] border-cyan-400 shadow-[0_0_25px_rgba(6,182,212,0.35)] divide-cyan-900 text-cyan-100'
           }`}>
             
-            {/* 0. World Selector (Mundo 1, Mundo 2, Mundo 3, Mundo 4) */}
-            <div className={`p-4 space-y-3 ${worldMode === 'world1' ? 'bg-[#E4E3E0]' : 'bg-[#131728]'}`}>
+            {/* 0. World Selector (Mundo 1, Mundo 2, Mundo 3, Mundo 4, Mundo Libre) */}
+            <div className={`p-4 space-y-3 ${
+              worldMode === 'world1'
+                ? 'bg-[#0a2342]'
+                : worldMode === 'world2'
+                  ? 'bg-[#29071c]'
+                  : worldMode === 'world3'
+                    ? 'bg-[#2d0f05]'
+                    : worldMode === 'world4'
+                      ? 'bg-[#04261a]'
+                      : 'bg-[#131728]'
+            }`}>
               <label className={`text-[10px] font-black uppercase tracking-widest block flex items-center justify-between ${
-                worldMode === 'world1' ? 'text-[#141414]' : worldMode === 'world2' ? 'text-purple-300' : worldMode === 'world3' ? 'text-amber-300' : 'text-emerald-300'
+                worldMode === 'world1' ? 'text-sky-300' : worldMode === 'world2' ? 'text-pink-300' : worldMode === 'world3' ? 'text-orange-300' : worldMode === 'world4' ? 'text-emerald-300' : 'text-cyan-300'
               }`}>
                 <span>Entorno de Simulación</span>
-                <span className={`font-mono font-bold text-[9px] px-1.5 py-0.5 ${
+                <span className={`font-mono font-bold text-[9px] px-2 py-0.5 rounded ${
                   worldMode === 'world1'
-                    ? 'bg-[#FF4D00] text-white'
+                    ? 'bg-sky-500 text-white shadow-[0_0_8px_#38bdf8]'
                     : worldMode === 'world2'
-                      ? 'bg-[#a855f7] text-white shadow-[0_0_8px_#a855f7]'
+                      ? 'bg-pink-500 text-white shadow-[0_0_8px_#f472b6]'
                       : worldMode === 'world3'
-                        ? 'bg-amber-400 text-[#141414] font-black'
-                        : 'bg-emerald-400 text-[#0b0e1b] font-black'
+                        ? 'bg-orange-500 text-white shadow-[0_0_8px_#fb923c]'
+                        : worldMode === 'world4'
+                          ? 'bg-emerald-500 text-black font-black shadow-[0_0_8px_#34d399]'
+                          : 'bg-cyan-400 text-black font-black shadow-[0_0_8px_#06b6d4]'
                 }`}>
-                  {worldMode === 'world1' ? 'Relatividad' : worldMode === 'world2' ? 'Pista MUA/MRU' : worldMode === 'world3' ? 'Caída Libre' : 'Tiro Parabólico'}
+                  {worldMode === 'world1' ? 'Mundo 1 • Azul' : worldMode === 'world2' ? 'Mundo 2 • Rosado' : worldMode === 'world3' ? 'Mundo 3 • Naranja' : worldMode === 'world4' ? 'Mundo 4 • Verde' : 'Mundo Libre'}
                 </span>
               </label>
 
               <div className="grid grid-cols-2 gap-1.5">
                 <button
                   onClick={() => { setWorldMode('world1'); setProjectileType('ball'); resetSimulation(); }}
-                  className={`py-1.5 px-1 border-2 text-xs font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5 ${
+                  className={`py-1.5 px-1 border-2 text-xs font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5 rounded ${
                     worldMode === 'world1'
-                      ? 'bg-[#FFEA00] text-[#141414] border-[#141414] shadow-[2px_2px_0px_#141414]'
-                      : 'bg-[#1e293b] text-slate-300 border-slate-700 hover:border-amber-400'
+                      ? 'bg-sky-500 text-white border-sky-300 shadow-[0_0_12px_rgba(56,189,248,0.5)] font-black'
+                      : 'bg-slate-900/80 text-sky-200/70 border-sky-900 hover:border-sky-400'
                   }`}
                 >
-                  <Globe className="w-3.5 h-3.5 text-[#FF4D00]" />
+                  <Globe className="w-3.5 h-3.5 text-sky-300" />
                   <span className="text-[8.5px]">Mundo 1</span>
-                  <span className="text-[7px] font-mono opacity-80">Relativ.</span>
+                  <span className="text-[7px] font-mono opacity-90">Azul • Gumball</span>
                 </button>
 
                 <button
                   onClick={() => { setWorldMode('world2'); resetSimulation(); }}
-                  className={`py-1.5 px-1 border-2 text-xs font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5 ${
+                  className={`py-1.5 px-1 border-2 text-xs font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5 rounded ${
                     worldMode === 'world2'
-                      ? 'bg-[#a855f7] text-white border-purple-300 shadow-[0_0_12px_rgba(168,85,247,0.5)]'
-                      : 'bg-[#1e293b] text-slate-300 border-slate-700 hover:border-purple-400'
+                      ? 'bg-pink-500 text-white border-pink-300 shadow-[0_0_12px_rgba(244,114,182,0.5)] font-black'
+                      : 'bg-slate-900/80 text-pink-200/70 border-pink-900 hover:border-pink-400'
                   }`}
                 >
-                  <Rocket className="w-3.5 h-3.5 text-[#a855f7]" />
+                  <Rocket className="w-3.5 h-3.5 text-pink-300" />
                   <span className="text-[8.5px]">Mundo 2</span>
-                  <span className="text-[7px] font-mono opacity-80">Pista H.</span>
+                  <span className="text-[7px] font-mono opacity-90">Rosado • Anais</span>
                 </button>
 
                 <button
                   onClick={() => { setWorldMode('world3'); resetSimulation(); }}
-                  className={`py-1.5 px-1 border-2 text-xs font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5 ${
+                  className={`py-1.5 px-1 border-2 text-xs font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5 rounded ${
                     worldMode === 'world3'
-                      ? 'bg-amber-400 text-[#141414] border-amber-500 shadow-[0_0_12px_rgba(251,191,36,0.5)] font-black'
-                      : 'bg-[#1e293b] text-slate-300 border-slate-700 hover:border-amber-400'
+                      ? 'bg-orange-500 text-white border-orange-300 shadow-[0_0_12px_rgba(251,146,60,0.5)] font-black'
+                      : 'bg-slate-900/80 text-orange-200/70 border-orange-900 hover:border-orange-400'
                   }`}
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <Sparkles className="w-3.5 h-3.5 text-orange-300" />
                   <span className="text-[8.5px]">Mundo 3</span>
-                  <span className="text-[7px] font-mono opacity-80">Caída Lib.</span>
+                  <span className="text-[7px] font-mono opacity-90">Naranja • Darwin</span>
                 </button>
 
                 <button
                   onClick={() => { setWorldMode('world4'); resetSimulation(); }}
-                  className={`py-1.5 px-1 border-2 text-xs font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5 ${
+                  className={`py-1.5 px-1 border-2 text-xs font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5 rounded ${
                     worldMode === 'world4'
-                      ? 'bg-emerald-400 text-[#0b0e1b] border-emerald-300 shadow-[0_0_12px_rgba(52,211,153,0.5)] font-black'
-                      : 'bg-[#1e293b] text-slate-300 border-slate-700 hover:border-emerald-400'
+                      ? 'bg-emerald-500 text-black border-emerald-300 shadow-[0_0_12px_rgba(52,211,153,0.5)] font-black'
+                      : 'bg-slate-900/80 text-emerald-200/70 border-emerald-900 hover:border-emerald-400'
                   }`}
                 >
-                  <Target className="w-3.5 h-3.5 text-emerald-400" />
+                  <Target className="w-3.5 h-3.5 text-emerald-300" />
                   <span className="text-[8.5px]">Mundo 4</span>
-                  <span className="text-[7px] font-mono opacity-80">Tiro Parab.</span>
+                  <span className="text-[7px] font-mono opacity-90">Verde • Parábola</span>
+                </button>
+
+                <button
+                  onClick={() => { setWorldMode('free'); resetSimulation(); }}
+                  className={`col-span-2 py-1.5 px-2 border-2 text-xs font-black uppercase transition-all flex items-center justify-center gap-1.5 rounded ${
+                    worldMode === 'free'
+                      ? 'bg-cyan-400 text-[#0b0e1b] border-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.6)]'
+                      : 'bg-slate-900/80 text-cyan-300 border-cyan-900 hover:border-cyan-400'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-spin" style={{ animationDuration: '6s' }} />
+                  <span className="text-[9.5px]">Mundo Libre (Sandbox)</span>
+                  <span className="text-[7.5px] font-mono bg-cyan-950 text-cyan-200 px-1 rounded border border-cyan-800">0g / Grav.</span>
                 </button>
               </div>
             </div>
@@ -1558,118 +1658,74 @@ export default function App() {
             {/* WORLD 1 CONTROLS */}
             {worldMode === 'world1' && (
               <>
-                {/* 1. Velocity Control Slider */}
-                <div className="p-5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-black uppercase tracking-wider text-[#141414] flex items-center">
-                      <Compass className="w-4 h-4 mr-1.5 text-[#FF4D00]" />
-                      Velocidad Bus (v/c)
-                    </label>
-                    <span className="text-sm font-mono font-bold px-2 py-0.5 border bg-[#141414] text-white border-[#141414]">
-                      {v.toFixed(3)} c
-                    </span>
-                  </div>
-
-                  <input
-                    id="slider-velocity"
-                    type="range"
-                    min="0"
-                    max="0.999"
-                    step="0.001"
-                    value={v}
-                    onChange={(e) => handleVelocityChange(e.target.value)}
-                    className="w-full h-3 border-2 appearance-none cursor-pointer bg-white border-[#141414] accent-[#FF4D00]"
-                  />
-
-                  {/* Quick Preset Buttons */}
-                  <div className="grid grid-cols-5 gap-1 pt-1">
-                    {[0.0, 0.5, 0.8, 0.95, 0.999].map((preset) => (
-                      <button
-                        key={preset}
-                        onClick={() => {
-                          setV(preset);
-                          resetSimulation();
-                        }}
-                        className={`py-1 text-[11px] font-mono border-2 transition-all ${
-                          v === preset
-                            ? 'bg-[#141414] text-white border-[#141414]'
-                            : 'bg-[#E4E3E0] text-[#141414] border-[#141414] hover:bg-[#D4D3D0]'
-                        }`}
-                      >
-                        {preset === 0.0 ? '0.0' : `${preset.toFixed(2)}`}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 2. Display View Mode Selector */}
-                <div className="p-5 space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-[#141414] block">
+                {/* 1. Display View Mode Selector */}
+                <div className="p-5 space-y-3 bg-[#0a2342]">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-sky-300 block">
                     Modo de Visualización
                   </label>
                   
                   <div className="space-y-2">
                     <button
                       onClick={() => setViewMode('split')}
-                      className={`w-full py-2 px-3 border-2 text-left text-xs font-bold uppercase transition-all flex items-center justify-between ${
+                      className={`w-full py-2 px-3 border-2 text-left text-xs font-bold uppercase transition-all flex items-center justify-between rounded ${
                         viewMode === 'split'
-                          ? 'bg-[#141414] text-white border-[#141414] shadow-[3px_3px_0px_#141414]'
-                          : 'bg-[#CECDBA] text-[#141414] border-[#141414] hover:bg-[#bfbea9]'
+                          ? 'bg-sky-500 text-white border-sky-300 shadow-[0_0_10px_#38bdf8]'
+                          : 'bg-[#081c36] text-sky-200 border-sky-900 hover:border-sky-400'
                       }`}
                     >
                       <span className="flex items-center gap-2">
-                        <LayoutGrid className="w-4 h-4 text-[#00E5FF]" />
+                        <LayoutGrid className="w-4 h-4 text-sky-300" />
                         Vista Doble (Marco S' + Marco S)
                       </span>
                     </button>
 
                     <button
                       onClick={() => setViewMode('bus')}
-                      className={`w-full py-2 px-3 border-2 text-left text-xs font-bold uppercase transition-all flex items-center justify-between ${
+                      className={`w-full py-2 px-3 border-2 text-left text-xs font-bold uppercase transition-all flex items-center justify-between rounded ${
                         viewMode === 'bus'
-                          ? 'bg-[#141414] text-white border-[#141414] shadow-[3px_3px_0px_#141414]'
-                          : 'bg-[#CECDBA] text-[#141414] border-[#141414] hover:bg-[#bfbea9]'
+                          ? 'bg-sky-500 text-white border-sky-300 shadow-[0_0_10px_#38bdf8]'
+                          : 'bg-[#081c36] text-sky-200 border-sky-900 hover:border-sky-400'
                       }`}
                     >
                       <span className="flex items-center gap-2">
-                        <Eye className="w-4 h-4 text-[#FFEA00]" />
+                        <Eye className="w-4 h-4 text-yellow-300" />
                         Solo Cabina (Marco S')
                       </span>
                     </button>
 
                     <button
                       onClick={() => setViewMode('ground')}
-                      className={`w-full py-2 px-3 border-2 text-left text-xs font-bold uppercase transition-all flex items-center justify-between ${
+                      className={`w-full py-2 px-3 border-2 text-left text-xs font-bold uppercase transition-all flex items-center justify-between rounded ${
                         viewMode === 'ground'
-                          ? 'bg-[#141414] text-white border-[#141414] shadow-[3px_3px_0px_#141414]'
-                          : 'bg-[#CECDBA] text-[#141414] border-[#141414] hover:bg-[#bfbea9]'
+                          ? 'bg-sky-500 text-white border-sky-300 shadow-[0_0_10px_#38bdf8]'
+                          : 'bg-[#081c36] text-sky-200 border-sky-900 hover:border-sky-400'
                       }`}
                     >
                       <span className="flex items-center gap-2">
-                        <Eye className="w-4 h-4 text-[#FF4D00]" />
+                        <Eye className="w-4 h-4 text-orange-400" />
                         Solo Estación Exterior (Marco S)
                       </span>
                     </button>
                   </div>
                 </div>
 
-                {/* 3. Dinámica del Experimento */}
-                <div className="p-5 space-y-3 bg-[#CECDBA]/50 border-t-2 border-[#141414]">
-                  <div className="flex items-center gap-1.5 text-xs font-black uppercase text-[#141414]">
-                    <Sparkles className="w-4 h-4 text-[#FF4D00] animate-bounce" />
-                    Simulación Vertical en Movimiento
+                {/* 2. Dinámica del Experimento */}
+                <div className="p-5 space-y-3 bg-[#0f2e54] border-t-2 border-sky-400/40">
+                  <div className="flex items-center gap-1.5 text-xs font-black uppercase text-sky-200">
+                    <Sparkles className="w-4 h-4 text-sky-400 animate-bounce" />
+                    Simulación de Movimiento Simultáneo
                   </div>
-                  <p className="text-[11px] font-mono text-[#141414] leading-relaxed">
-                    La pelota rebotante se lanza verticalmente en el Marco S' (Interior del Bus). El Observador A ve un movimiento <strong>1D vertical puro</strong>, mientras el Observador B desde la estación ve una trayectoria <strong>parabólica 2D</strong> debido a la velocidad $v$ del vehículo.
+                  <p className="text-[11px] font-mono text-sky-100/90 leading-relaxed">
+                    La pelota rebotante se lanza verticalmente en el Marco S' (Interior del Autobús). El Observador A ve un movimiento <strong>1D vertical puro</strong>, mientras el Observador B desde la estación ve una trayectoria <strong>parabólica 2D</strong> debida al desplazamiento continuo del autobús.
                   </p>
-                  <div className="p-2.5 bg-[#141414] text-white rounded text-[10px] font-mono space-y-1.5 shadow-inner">
-                    <div className="flex justify-between items-center border-b border-gray-700 pb-1">
-                      <span className="text-[#00E5FF] font-bold">Obs A (Marco S'):</span>
-                      <span className="bg-[#00E5FF]/20 text-[#00E5FF] px-1.5 py-0.5 rounded">Tiro 1D (v_x'=0)</span>
+                  <div className="p-2.5 bg-[#07192f] text-sky-100 rounded text-[10px] font-mono space-y-1.5 border border-sky-500/30">
+                    <div className="flex justify-between items-center border-b border-sky-800 pb-1">
+                      <span className="text-sky-300 font-bold">Obs A (Marco S'):</span>
+                      <span className="bg-sky-500/20 text-sky-300 px-1.5 py-0.5 rounded border border-sky-400/30">Tiro 1D Vertical (v_x'=0)</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-[#FF4D00] font-bold">Obs B (Marco S):</span>
-                      <span className="bg-[#FF4D00]/20 text-[#FF4D00] px-1.5 py-0.5 rounded">Parábola 2D</span>
+                      <span className="text-amber-300 font-bold">Obs B (Marco S):</span>
+                      <span className="bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded border border-amber-400/30">Parábola 2D Compuesta</span>
                     </div>
                   </div>
                 </div>
@@ -1678,20 +1734,20 @@ export default function App() {
 
             {/* WORLD 2 CONTROLS (SIMULADOR DE MUA Y MRU EN PISTA HORIZONTAL) */}
             {worldMode === 'world2' && (
-              <div className="p-5 space-y-4 bg-[#131728]">
-                <div className="flex items-center justify-between border-b border-purple-500/30 pb-2">
-                  <span className="text-xs font-black uppercase text-purple-300 flex items-center gap-1.5">
-                    <Rocket className="w-4 h-4 text-purple-400" />
+              <div className="p-5 space-y-4 bg-[#29071c]">
+                <div className="flex items-center justify-between border-b border-pink-500/40 pb-2">
+                  <span className="text-xs font-black uppercase text-pink-300 flex items-center gap-1.5">
+                    <Rocket className="w-4 h-4 text-pink-400" />
                     Mundo 2: MUA y MRU
                   </span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 bg-purple-500 text-white font-bold rounded">
-                    Mundo 2
+                  <span className="text-[10px] font-mono px-2 py-0.5 bg-pink-500 text-white font-black rounded shadow-[0_0_8px_#f472b6]">
+                    Mundo 2 • Rosa
                   </span>
                 </div>
 
                 {/* Sub-Mode Selector */}
                 <div className="space-y-1.5">
-                  <span className="text-[11px] font-mono font-bold text-amber-300 block">
+                  <span className="text-[11px] font-mono font-bold text-pink-200 block">
                     Modo de Análisis en Mundo 2:
                   </span>
                   <div className="grid grid-cols-3 gap-1 font-mono text-[10px]">
@@ -1699,144 +1755,138 @@ export default function App() {
                       onClick={() => setWorld2SubMode('both')}
                       className={`py-2 px-1 font-black rounded border-2 transition-all flex flex-col items-center justify-center text-center ${
                         world2SubMode === 'both'
-                          ? 'bg-purple-600 text-white border-purple-300 shadow-[0_0_8px_#a855f7]'
-                          : 'bg-[#1e293b] text-slate-300 border-slate-700 hover:bg-slate-800'
+                          ? 'bg-pink-500 text-white border-pink-300 shadow-[0_0_8px_#f472b6]'
+                          : 'bg-[#1a0412] text-pink-200/80 border-pink-900 hover:border-pink-400'
                       }`}
                     >
                       <span>🏁 Ambos</span>
-                      <span className="text-[8px] text-purple-200">Carrera</span>
+                      <span className="text-[8px] text-pink-100">Carrera</span>
                     </button>
                     <button
                       onClick={() => setWorld2SubMode('mru')}
                       className={`py-2 px-1 font-black rounded border-2 transition-all flex flex-col items-center justify-center text-center ${
                         world2SubMode === 'mru'
-                          ? 'bg-cyan-500 text-[#0b0e1b] border-cyan-300 shadow-[0_0_8px_#38bdf8]'
-                          : 'bg-[#1e293b] text-slate-300 border-slate-700 hover:bg-slate-800'
+                          ? 'bg-fuchsia-500 text-white border-fuchsia-300 shadow-[0_0_8px_#d946ef]'
+                          : 'bg-[#1a0412] text-pink-200/80 border-pink-900 hover:border-pink-400'
                       }`}
                     >
                       <span>⚡ MRU Solo</span>
-                      <span className="text-[8px] text-cyan-950 font-extrabold">Vel. Cte</span>
+                      <span className="text-[8px] text-fuchsia-100 font-extrabold">Vel. Cte</span>
                     </button>
                     <button
                       onClick={() => setWorld2SubMode('mua')}
                       className={`py-2 px-1 font-black rounded border-2 transition-all flex flex-col items-center justify-center text-center ${
                         world2SubMode === 'mua'
-                          ? 'bg-pink-600 text-white border-pink-300 shadow-[0_0_8px_#ec4899]'
-                          : 'bg-[#1e293b] text-slate-300 border-slate-700 hover:bg-slate-800'
+                          ? 'bg-rose-500 text-white border-rose-300 shadow-[0_0_8px_#f43f5e]'
+                          : 'bg-[#1a0412] text-pink-200/80 border-pink-900 hover:border-pink-400'
                       }`}
                     >
                       <span>🚀 MUA Solo</span>
-                      <span className="text-[8px] text-pink-200">Acelerado</span>
+                      <span className="text-[8px] text-rose-100">Acelerado</span>
                     </button>
                   </div>
                 </div>
 
                 {/* MUA Controls (Visible if 'both' or 'mua') */}
                 {(world2SubMode === 'both' || world2SubMode === 'mua') && (
-                  <div className="space-y-3 pt-2 border-t border-purple-500/30">
-                    <span className="text-xs font-mono font-black text-purple-300 block uppercase">
-                      Parámetros MUA (Acelerado):
-                    </span>
-                    
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between items-center text-xs font-mono">
-                        <span className="text-purple-300 font-bold">1. Aceleración (a):</span>
-                        <span className="bg-purple-600 text-white font-bold px-2 py-0.5 rounded">
-                          {muaAcc.toFixed(1)} m/s²
-                        </span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0.1"
-                        max="8.0"
-                        step="0.1"
-                        value={muaAcc}
-                        onChange={(e) => {
-                          setMuaAcc(parseFloat(e.target.value));
-                          resetSimulation();
-                        }}
-                        className="w-full accent-purple-400"
-                      />
-                    </div>
+                  <div className="space-y-3 pt-2 border-t border-pink-500/30">
+                    <PixelSlider
+                      label="Aceleración MUA (a)"
+                      character="anais"
+                      value={muaAcc}
+                      min={0.1}
+                      max={8.0}
+                      step={0.1}
+                      unit="m/s²"
+                      onChange={(newVal) => {
+                        setMuaAcc(newVal);
+                        resetSimulation();
+                      }}
+                      description="Tasa constante de aceleración horizontal a = dv/dt"
+                      highlightFormula="x(t) = v₀t + ½at²"
+                      presetTags={[
+                        { label: '1.0', value: 1.0 },
+                        { label: '3.0', value: 3.0 },
+                        { label: '5.0', value: 5.0 },
+                        { label: '8.0', value: 8.0 },
+                      ]}
+                    />
 
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between items-center text-xs font-mono">
-                        <span className="text-purple-300 font-bold">2. Vel. Inicial (v₀):</span>
-                        <span className="bg-purple-900 text-purple-200 font-bold px-2 py-0.5 rounded">
-                          {muaV0.toFixed(1)} m/s
-                        </span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0.0"
-                        max="15.0"
-                        step="0.5"
-                        value={muaV0}
-                        onChange={(e) => {
-                          setMuaV0(parseFloat(e.target.value));
-                          resetSimulation();
-                        }}
-                        className="w-full accent-purple-400"
-                      />
-                    </div>
+                    <PixelSlider
+                      label="Velocidad Inicial (v₀)"
+                      character="anais"
+                      value={muaV0}
+                      min={0.0}
+                      max={15.0}
+                      step={0.5}
+                      unit="m/s"
+                      onChange={(newVal) => {
+                        setMuaV0(newVal);
+                        resetSimulation();
+                      }}
+                      description="Rapidez inicial del cubo en x = 0 m"
+                      highlightFormula="v(t) = v₀ + at"
+                      presetTags={[
+                        { label: '0 m/s', value: 0.0 },
+                        { label: '5 m/s', value: 5.0 },
+                        { label: '10 m/s', value: 10.0 },
+                      ]}
+                    />
                   </div>
                 )}
 
                 {/* MRU Controls (Visible if 'both' or 'mru') */}
                 {(world2SubMode === 'both' || world2SubMode === 'mru') && (
-                  <div className="space-y-3 pt-2 border-t border-cyan-500/30">
-                    <span className="text-xs font-mono font-black text-cyan-300 block uppercase">
-                      Parámetros MRU (Vel. Constante):
-                    </span>
-
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between items-center text-xs font-mono">
-                        <span className="text-cyan-300 font-bold">Velocidad Constante (v):</span>
-                        <span className="bg-cyan-500 text-[#0b0e1b] font-black px-2 py-0.5 rounded">
-                          {mruV.toFixed(1)} m/s
-                        </span>
-                      </div>
-                      <input
-                        type="range"
-                        min="1.0"
-                        max="25.0"
-                        step="0.5"
-                        value={mruV}
-                        onChange={(e) => {
-                          setMruV(parseFloat(e.target.value));
-                          resetSimulation();
-                        }}
-                        className="w-full accent-cyan-400"
-                      />
-                    </div>
+                  <div className="space-y-3 pt-2 border-t border-pink-500/30">
+                    <PixelSlider
+                      label="Velocidad Constante MRU (v)"
+                      character="anais"
+                      value={mruV}
+                      min={1.0}
+                      max={25.0}
+                      step={0.5}
+                      unit="m/s"
+                      onChange={(newVal) => {
+                        setMruV(newVal);
+                        resetSimulation();
+                      }}
+                      description="Movimiento Rectilíneo Uniforme sin aceleración (a = 0)"
+                      highlightFormula="x(t) = v · t"
+                      presetTags={[
+                        { label: '5 m/s', value: 5.0 },
+                        { label: '12 m/s', value: 12.0 },
+                        { label: '20 m/s', value: 20.0 },
+                      ]}
+                    />
                   </div>
                 )}
 
                 {/* Track Length */}
-                <div className="space-y-1.5 pt-2 border-t border-slate-700">
-                  <div className="flex justify-between items-center text-xs font-mono">
-                    <span className="text-amber-300 font-bold">Longitud Pista (L):</span>
-                    <span className="bg-amber-400 text-[#0b0e1b] font-black px-2 py-0.5 rounded">
-                      {world2TrackLength} m
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min="30"
-                    max="300"
-                    step="10"
+                <div className="space-y-1.5 pt-2 border-t border-pink-500/30">
+                  <PixelSlider
+                    label="Longitud de Pista (L)"
+                    character="anais"
                     value={world2TrackLength}
-                    onChange={(e) => {
-                      setWorld2TrackLength(parseInt(e.target.value));
+                    min={30}
+                    max={300}
+                    step={10}
+                    unit="m"
+                    onChange={(newVal) => {
+                      setWorld2TrackLength(Math.round(newVal));
                       resetSimulation();
                     }}
-                    className="w-full accent-amber-400"
+                    description="Distancia recorrida sobre la pista hasta la línea de meta"
+                    presetTags={[
+                      { label: '50m', value: 50 },
+                      { label: '100m', value: 100 },
+                      { label: '200m', value: 200 },
+                    ]}
                   />
                 </div>
 
                 {/* Preset Scenarios */}
-                <div className="pt-2 border-t border-purple-500/30 space-y-2">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-300 block">
+                <div className="pt-2 border-t border-pink-500/30 space-y-2">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-pink-300 block">
                     Escenarios Didácticos
                   </span>
                   <div className="space-y-1.5 text-[10px] font-mono">
@@ -1849,7 +1899,7 @@ export default function App() {
                         setWorld2TrackLength(100);
                         resetSimulation();
                       }}
-                      className="w-full py-1.5 px-2 bg-purple-900/60 hover:bg-purple-800 text-purple-200 border border-purple-500/50 rounded text-left transition-all"
+                      className="w-full py-1.5 px-2 bg-pink-900/60 hover:bg-pink-800 text-pink-200 border border-pink-500/50 rounded text-left transition-all"
                     >
                       🚀 1. Carrera Comparativa (MUA vs MRU)
                     </button>
@@ -1861,7 +1911,7 @@ export default function App() {
                         setWorld2TrackLength(120);
                         resetSimulation();
                       }}
-                      className="w-full py-1.5 px-2 bg-cyan-950 hover:bg-cyan-900 text-cyan-200 border border-cyan-500/50 rounded text-left transition-all"
+                      className="w-full py-1.5 px-2 bg-[#350722] hover:bg-[#480a30] text-pink-200 border border-pink-500/50 rounded text-left transition-all"
                     >
                       ⚡ 2. Módulo Aislado MRU (v = 15 m/s, a = 0)
                     </button>
@@ -1874,7 +1924,7 @@ export default function App() {
                         setWorld2TrackLength(120);
                         resetSimulation();
                       }}
-                      className="w-full py-1.5 px-2 bg-pink-950 hover:bg-pink-900 text-pink-200 border border-pink-500/50 rounded text-left transition-all"
+                      className="w-full py-1.5 px-2 bg-[#3b0827] hover:bg-[#520c37] text-pink-200 border border-pink-500/50 rounded text-left transition-all"
                     >
                       🔥 3. Módulo Aislado MUA (a = 3.5 m/s², v₀ = 2 m/s)
                     </button>
@@ -1885,20 +1935,20 @@ export default function App() {
 
             {/* WORLD 3 CONTROLS (CAÍDA LIBRE ROCA VS MONEDA) */}
             {worldMode === 'world3' && (
-              <div className="p-5 space-y-4 bg-[#131728]">
-                <div className="flex items-center justify-between border-b border-amber-500/30 pb-2">
-                  <span className="text-xs font-black uppercase text-amber-300 flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-amber-400" />
-                    Caída Libre Didáctica (Gumball vs Darwin)
+              <div className="p-5 space-y-4 bg-[#2d0f05]">
+                <div className="flex items-center justify-between border-b border-orange-500/40 pb-2">
+                  <span className="text-xs font-black uppercase text-orange-300 flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-orange-400" />
+                    Caída Libre (Darwin • Naranja)
                   </span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 bg-amber-400 text-[#0b0e1b] font-black rounded">
-                    Mundo 3
+                  <span className="text-[10px] font-mono px-2 py-0.5 bg-orange-500 text-white font-black rounded shadow-[0_0_8px_#fb923c]">
+                    Mundo 3 • Naranja
                   </span>
                 </div>
 
                 {/* Character Selection in Sidebar */}
                 <div className="space-y-1.5">
-                  <span className="text-xs font-mono font-bold text-amber-300 block">
+                  <span className="text-xs font-mono font-bold text-orange-200 block">
                     Personajes de la Caída:
                   </span>
                   <div className="grid grid-cols-2 gap-1.5 font-mono text-[10px]">
@@ -1909,8 +1959,8 @@ export default function App() {
                       }}
                       className={`py-1.5 px-2 border font-bold rounded flex items-center justify-center gap-1 transition-all ${
                         w3CharacterType === 'gumball_darwin'
-                          ? 'bg-[#00E5FF] text-[#0b0e1b] border-cyan-300 font-black shadow-[0_0_10px_#00E5FF]'
-                          : 'bg-[#1e293b] text-slate-300 border-slate-700'
+                          ? 'bg-orange-500 text-white border-orange-300 font-black shadow-[0_0_10px_#fb923c]'
+                          : 'bg-[#1f0902] text-orange-200/80 border-orange-900 hover:border-orange-400'
                       }`}
                     >
                       <span>🐱 Gumball & 🐟 Darwin</span>
@@ -1922,8 +1972,8 @@ export default function App() {
                       }}
                       className={`py-1.5 px-2 border font-bold rounded flex items-center justify-center gap-1 transition-all ${
                         w3CharacterType === 'classic'
-                          ? 'bg-amber-400 text-[#0b0e1b] border-amber-300 font-black shadow-[0_0_10px_#fbbf24]'
-                          : 'bg-[#1e293b] text-slate-300 border-slate-700'
+                          ? 'bg-amber-500 text-black border-amber-300 font-black shadow-[0_0_10px_#f59e0b]'
+                          : 'bg-[#1f0902] text-orange-200/80 border-orange-900 hover:border-orange-400'
                       }`}
                     >
                       <span>🪨 Roca vs 🪙 Moneda</span>
@@ -1932,30 +1982,33 @@ export default function App() {
                 </div>
 
                 {/* Drop Height */}
-                <div className="space-y-1.5">
-                  <div className="flex justify-between items-center text-xs font-mono">
-                    <span className="text-amber-300 font-bold">1. Altura Caída (H):</span>
-                    <span className="bg-amber-400 text-[#0b0e1b] font-black px-2 py-0.5 rounded">
-                      {ffHeight} m
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min="10"
-                    max="150"
-                    step="5"
+                <div className="space-y-2">
+                  <PixelSlider
+                    label="Altura de Caída Libre (H)"
+                    character="darwin"
                     value={ffHeight}
-                    onChange={(e) => {
-                      setFfHeight(parseInt(e.target.value));
+                    min={10}
+                    max={150}
+                    step={5}
+                    unit="m"
+                    onChange={(newVal) => {
+                      setFfHeight(Math.round(newVal));
                       resetSimulation();
                     }}
-                    className="w-full accent-amber-400"
+                    description="Altura desde la cual se sueltan en simultáneo la roca y la moneda"
+                    highlightFormula="t = √(2H/g)"
+                    presetTags={[
+                      { label: '25m', value: 25 },
+                      { label: '50m', value: 50 },
+                      { label: '100m', value: 100 },
+                      { label: '150m', value: 150 },
+                    ]}
                   />
                 </div>
 
                 {/* Atmosphere / Air Toggle */}
                 <div className="space-y-2">
-                  <span className="text-xs font-mono font-bold text-cyan-300 block">
+                  <span className="text-xs font-mono font-bold text-orange-200 block">
                     2. Medio Atmosférico:
                   </span>
                   <div className="grid grid-cols-2 gap-2 font-mono text-[11px]">
@@ -1966,8 +2019,8 @@ export default function App() {
                       }}
                       className={`py-2 px-2 border-2 font-bold rounded flex items-center justify-center gap-1 transition-all ${
                         !ffVacuum
-                          ? 'bg-cyan-400 text-[#0b0e1b] border-cyan-300 font-black shadow-[0_0_10px_#00E5FF]'
-                          : 'bg-[#1e293b] text-slate-300 border-slate-700'
+                          ? 'bg-orange-500 text-white border-orange-300 font-black shadow-[0_0_10px_#fb923c]'
+                          : 'bg-[#1f0902] text-orange-200/80 border-orange-900'
                       }`}
                     >
                       <Wind className="w-3.5 h-3.5" />
@@ -1981,8 +2034,8 @@ export default function App() {
                       }}
                       className={`py-2 px-2 border-2 font-bold rounded flex items-center justify-center gap-1 transition-all ${
                         ffVacuum
-                          ? 'bg-amber-400 text-[#0b0e1b] border-amber-300 font-black shadow-[0_0_10px_#fbbf24]'
-                          : 'bg-[#1e293b] text-slate-300 border-slate-700'
+                          ? 'bg-amber-400 text-black border-amber-300 font-black shadow-[0_0_10px_#fbbf24]'
+                          : 'bg-[#1f0902] text-orange-200/80 border-orange-900'
                       }`}
                     >
                       <Zap className="w-3.5 h-3.5" />
@@ -1994,8 +2047,8 @@ export default function App() {
                 {/* Gravity Selection */}
                 <div className="space-y-2">
                   <div className="flex justify-between items-center text-xs font-mono">
-                    <span className="text-purple-300 font-bold">3. Gravedad (g):</span>
-                    <span className="bg-purple-600 text-white font-bold px-2 py-0.5 rounded">
+                    <span className="text-orange-200 font-bold">3. Gravedad (g):</span>
+                    <span className="bg-orange-600 text-white font-bold px-2 py-0.5 rounded">
                       {ffGravity.toFixed(2)} m/s²
                     </span>
                   </div>
@@ -2006,7 +2059,7 @@ export default function App() {
                         resetSimulation();
                       }}
                       className={`py-1.5 px-1 border font-bold rounded text-center ${
-                        ffGravity === 9.81 ? 'bg-purple-600 text-white border-purple-300' : 'bg-[#1e293b] text-slate-300 border-slate-700'
+                        ffGravity === 9.81 ? 'bg-orange-500 text-white border-orange-300' : 'bg-[#1f0902] text-orange-200/80 border-orange-900'
                       }`}
                     >
                       Tierra (9.81)
@@ -2018,7 +2071,7 @@ export default function App() {
                         resetSimulation();
                       }}
                       className={`py-1.5 px-1 border font-bold rounded text-center ${
-                        ffGravity === 1.62 ? 'bg-purple-600 text-white border-purple-300' : 'bg-[#1e293b] text-slate-300 border-slate-700'
+                        ffGravity === 1.62 ? 'bg-orange-500 text-white border-orange-300' : 'bg-[#1f0902] text-orange-200/80 border-orange-900'
                       }`}
                     >
                       Luna (1.62)
@@ -2030,7 +2083,7 @@ export default function App() {
                         resetSimulation();
                       }}
                       className={`py-1.5 px-1 border font-bold rounded text-center ${
-                        ffGravity === 24.79 ? 'bg-purple-600 text-white border-purple-300' : 'bg-[#1e293b] text-slate-300 border-slate-700'
+                        ffGravity === 24.79 ? 'bg-orange-500 text-white border-orange-300' : 'bg-[#1f0902] text-orange-200/80 border-orange-900'
                       }`}
                     >
                       Júpiter (24.79)
@@ -2039,8 +2092,8 @@ export default function App() {
                 </div>
 
                 {/* Controls Section: Pause / Play & Reset */}
-                <div className="space-y-2 pt-2 border-t border-amber-500/30">
-                  <span className="text-xs font-mono font-bold text-amber-300 block">
+                <div className="space-y-2 pt-2 border-t border-orange-500/30">
+                  <span className="text-xs font-mono font-bold text-orange-200 block">
                     4. Control de Simulación:
                   </span>
                   <div className="grid grid-cols-2 gap-2 font-mono text-[11px]">
@@ -2048,8 +2101,8 @@ export default function App() {
                       onClick={() => setIsPlaying(!isPlaying)}
                       className={`py-2 px-2 border-2 font-black rounded flex items-center justify-center gap-1.5 transition-all ${
                         isPlaying
-                          ? 'bg-amber-400 text-[#0b0e1b] border-amber-300 shadow-[0_0_10px_#fbbf24]'
-                          : 'bg-[#00E5FF] text-[#0b0e1b] border-cyan-300 shadow-[0_0_10px_#00E5FF]'
+                          ? 'bg-orange-500 text-white border-orange-300 shadow-[0_0_10px_#fb923c]'
+                          : 'bg-amber-400 text-black border-amber-300 shadow-[0_0_10px_#fbbf24]'
                       }`}
                     >
                       {isPlaying ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current" />}
@@ -2058,7 +2111,7 @@ export default function App() {
 
                     <button
                       onClick={resetSimulation}
-                      className="py-2 px-2 bg-[#1e293b] hover:bg-slate-700 text-amber-200 border-2 border-amber-400 font-bold rounded flex items-center justify-center gap-1.5 transition-all"
+                      className="py-2 px-2 bg-[#1f0902] hover:bg-[#330f04] text-orange-200 border-2 border-orange-400 font-bold rounded flex items-center justify-center gap-1.5 transition-all"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
                       <span>Reiniciar</span>
@@ -2067,28 +2120,28 @@ export default function App() {
                 </div>
 
                 {/* Calculation of Time Box */}
-                <div className="p-3 bg-amber-950/40 border border-amber-500/40 rounded space-y-1.5 font-mono text-[10px] text-amber-200">
-                  <div className="flex items-center justify-between font-bold text-amber-300 border-b border-amber-500/30 pb-1">
+                <div className="p-3 bg-[#1f0902] border border-orange-500/40 rounded space-y-1.5 font-mono text-[10px] text-orange-200">
+                  <div className="flex items-center justify-between font-bold text-orange-300 border-b border-orange-500/30 pb-1">
                     <span>⏱️ TIEMPO CALCULADO DE CAÍDA</span>
-                    <span className="text-[9px] bg-amber-400 text-[#0b0e1b] px-1.5 rounded font-black">
+                    <span className="text-[9px] bg-orange-500 text-white px-1.5 rounded font-black">
                       H = {ffHeight}m
                     </span>
                   </div>
-                  <div className="space-y-1 text-slate-300">
+                  <div className="space-y-1 text-orange-100">
                     <p className="flex justify-between">
                       <span>• 🪨 Roca (5 kg):</span>
                       <strong className="text-amber-300">{w3Rock.impactTime.toFixed(2)} s</strong>
                     </p>
                     <p className="flex justify-between">
                       <span>• 🪙 Moneda (5 g):</span>
-                      <strong className="text-cyan-300">{w3Coin.impactTime.toFixed(2)} s</strong>
+                      <strong className="text-orange-300">{w3Coin.impactTime.toFixed(2)} s</strong>
                     </p>
                     {ffVacuum ? (
-                      <p className="text-[9px] text-amber-400 font-bold pt-1 border-t border-amber-500/20">
+                      <p className="text-[9px] text-amber-300 font-bold pt-1 border-t border-orange-500/20">
                         ⚡ En Vacío: t = √(2H/g) = √({(2 * ffHeight).toFixed(0)}/{ffGravity}) = {w3Rock.impactTime.toFixed(2)}s
                       </p>
                     ) : (
-                      <p className="text-[9px] text-cyan-300 font-bold pt-1 border-t border-amber-500/20">
+                      <p className="text-[9px] text-orange-200 font-bold pt-1 border-t border-orange-500/20">
                         💨 En Aire: Diferencia de tiempo = +{(w3Coin.impactTime - w3Rock.impactTime).toFixed(2)}s por resistencia aerodinámica
                       </p>
                     )}
@@ -2099,28 +2152,28 @@ export default function App() {
 
             {/* WORLD 4 CONTROLS (TIRO PARABÓLICO 2D BALÍSTICO) */}
             {worldMode === 'world4' && (
-              <div className="p-5 space-y-4 bg-[#0a1912]">
+              <div className="p-5 space-y-4 bg-[#04261a]">
                 <div className="flex items-center justify-between border-b border-emerald-500/30 pb-2">
                   <span className="text-xs font-black uppercase text-emerald-300 flex items-center gap-1.5">
                     <Target className="w-4 h-4 text-emerald-400" />
                     Mundo 4: Tiro Parabólico
                   </span>
                   <span className="text-[10px] font-mono px-2 py-0.5 bg-emerald-400 text-[#0b0e1b] font-black rounded">
-                    Mundo 4
+                    Mundo 4 • Verde
                   </span>
                 </div>
 
-                <div className="p-3 bg-[#06120d] border border-emerald-500/40 rounded space-y-2 text-xs font-mono text-emerald-200">
+                <div className="p-3 bg-[#021810] border border-emerald-500/40 rounded space-y-2 text-xs font-mono text-emerald-200">
                   <p className="text-[11px] leading-relaxed">
                     Dispara proyectiles balísticos con ángulo θ y velocidad v₀ para calcular la altura máxima, tiempo de vuelo y acertar en la diana.
                   </p>
-                  <div className="p-2 bg-[#020705] rounded text-[10px] space-y-1 text-slate-300">
+                  <div className="p-2 bg-[#01100a] rounded text-[10px] space-y-1 text-emerald-100">
                     <div className="flex justify-between">
-                      <span className="text-cyan-300 font-bold">Horizontal (X):</span>
+                      <span className="text-emerald-300 font-bold">Horizontal (X):</span>
                       <span>MRU (v_x = cte)</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-amber-300 font-bold">Vertical (Y):</span>
+                      <span className="text-teal-300 font-bold">Vertical (Y):</span>
                       <span>MUA (a_y = -g)</span>
                     </div>
                   </div>
@@ -2128,10 +2181,55 @@ export default function App() {
               </div>
             )}
 
+            {/* WORLD 5: MUNDO LIBRE / SANDBOX CONTROLS */}
+            {worldMode === 'free' && (
+              <div className="p-5 space-y-4 bg-[#071322]">
+                <div className="flex items-center justify-between border-b border-cyan-500/30 pb-2">
+                  <span className="text-xs font-black uppercase text-cyan-300 flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-yellow-300" />
+                    Mundo Libre: Sandbox
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 bg-cyan-400 text-[#0b0e1b] font-black rounded">
+                    Mundo Libre
+                  </span>
+                </div>
+
+                <div className="p-3 bg-[#030a13] border border-cyan-500/40 rounded space-y-2 text-xs font-mono text-cyan-200">
+                  <p className="text-[11px] leading-relaxed">
+                    ¡Laboratorio de física abierta sin restricciones! Experimenta con gravedad cero, gravitación N-cuerpos tipo planetas, resortes, dibujo de rampas y ondas de choque sónicas.
+                  </p>
+                  <div className="p-2 bg-[#02050b] rounded text-[10px] space-y-1 text-slate-300">
+                    <div className="flex justify-between">
+                      <span className="text-cyan-300 font-bold">1. Herramientas:</span>
+                      <span>Spawneo, Slingshot, Rampas</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-amber-300 font-bold">2. Entornos:</span>
+                      <span>Espacio, Luna, Tierra, Júpiter</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-pink-300 font-bold">3. Energía:</span>
+                      <span>Conservación E_k + E_p = Cte</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Display Visual Toggles */}
-            <div className={`p-5 space-y-2 ${worldMode === 'world1' ? '' : 'bg-[#131728]'}`}>
+            <div className={`p-5 space-y-2 ${
+              worldMode === 'world1'
+                ? 'bg-[#0a2342]'
+                : worldMode === 'world2'
+                  ? 'bg-[#29071c]'
+                  : worldMode === 'world3'
+                    ? 'bg-[#2d0f05]'
+                    : worldMode === 'world4'
+                      ? 'bg-[#04261a]'
+                      : 'bg-[#131728]'
+            }`}>
               <label className={`text-[10px] font-black uppercase tracking-widest block ${
-                worldMode === 'world1' ? 'text-[#141414]' : 'text-purple-300'
+                worldMode === 'world1' ? 'text-[#0f172a]' : 'text-purple-300'
               }`}>
                 Opciones Visuales
               </label>
@@ -2158,20 +2256,28 @@ export default function App() {
             </div>
 
             {/* Simulation Speed */}
-            <div className={`p-5 space-y-2 ${worldMode === 'world1' ? 'bg-[#E4E3E0]' : 'bg-[#0f172a]'}`}>
-              <div className="flex justify-between items-center text-xs font-mono">
-                <span className="font-bold">Velocidad Simulación:</span>
-                <span>{simSpeed.toFixed(1)}x</span>
-              </div>
-              <input
-                type="range"
-                min="0.1"
-                max="3.0"
-                step="0.1"
+            <div className={`p-4 space-y-2 ${worldMode === 'world1' ? 'bg-[#dbeafe]' : 'bg-[#0f172a]'}`}>
+              <PixelSlider
+                label="Velocidad Temporal Simulación"
+                character="gumball"
                 value={simSpeed}
-                onChange={(e) => setSimSpeed(parseFloat(e.target.value))}
-                className="w-full accent-[#141414]"
+                min={0.1}
+                max={3.0}
+                step={0.1}
+                unit="x"
+                onChange={(newVal) => setSimSpeed(newVal)}
+                description="Ralentiza o acelera el paso del tiempo en el motor físico"
+                presetTags={[
+                  { label: '0.25x (Lento)', value: 0.25 },
+                  { label: '1.0x (Normal)', value: 1.0 },
+                  { label: '2.0x (Rápido)', value: 2.0 },
+                ]}
               />
+            </div>
+
+            {/* Pixel Art Trio Animated Companion Banner */}
+            <div className="p-3">
+              <PixelTrioBanner />
             </div>
           </section>
 
@@ -3428,6 +3534,18 @@ export default function App() {
               />
             )}
 
+            {/* ========================================================================= */}
+            {/* WORLD 5: MUNDO LIBRE / SANDBOX DE FÍSICA Y EXPERIMENTACIÓN ABIERTA        */}
+            {/* ========================================================================= */}
+            {worldMode === 'free' && (
+              <World5FreeSandbox
+                isPlaying={isPlaying}
+                setIsPlaying={setIsPlaying}
+                showVectors={showVectors}
+                showTrail={showTrail}
+              />
+            )}
+
 
             {/* ========================================================================= */}
             {/* WORLD 1: RELATIVIDAD ESPECIAL EN EL AUTOBÚS                                */}
@@ -3436,8 +3554,8 @@ export default function App() {
               <div className="space-y-6">
                 {/* VIEWPORT 1: INTERIOR DEL AUTOBÚS (Observador A) */}
                 {(viewMode === 'split' || viewMode === 'bus') && (
-                  <div className="border-4 bg-white border-[#141414] shadow-[6px_6px_0px_#141414] flex flex-col overflow-hidden relative">
-                    <div className="px-4 py-2 bg-[#141414] text-white flex items-center justify-between font-mono text-xs border-b-4 border-[#141414]">
+                  <div className="border-4 bg-white border-[#1e293b] shadow-[6px_6px_0px_#1e293b] flex flex-col overflow-hidden relative">
+                    <div className="px-4 py-2 bg-[#1e293b] text-white flex items-center justify-between font-mono text-xs border-b-4 border-[#1e293b]">
                       <div className="flex items-center space-x-2">
                         <span className="w-2.5 h-2.5 rounded-full bg-[#00E5FF] animate-pulse"></span>
                         <span className="font-bold uppercase tracking-wider text-[#00E5FF]">
@@ -3452,7 +3570,7 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div className="relative w-full h-[320px] overflow-hidden flex items-center justify-center bg-[#10141e]">
+                    <div className="relative w-full h-[320px] overflow-hidden flex items-center justify-center bg-[#8ea2c6]">
                       <svg viewBox={`0 0 ${W_VIEW} ${H_VIEW}`} className="w-full h-full select-none">
                         <defs>
                           <radialGradient id="ball3dGrad1" cx="35%" cy="35%" r="65%">
@@ -3470,6 +3588,9 @@ export default function App() {
                             <feComposite in="SourceGraphic" in2="blur" operator="over" />
                           </filter>
                         </defs>
+
+                        {/* Background sky matching animation */}
+                        <rect width={W_VIEW} height={H_VIEW} fill="#8ea2c6" />
 
                         {(() => {
                           const busVibeY = isPlaying && v > 0 ? Math.sin(tGround * 28) * Math.min(2.0, v * 2.5) : 0;
@@ -3728,17 +3849,17 @@ export default function App() {
                                 )}
                               </g>
 
-                              {/* Dashboard Telemetry HUD Overlay in Top Right */}
+                               {/* Dashboard Telemetry HUD Overlay in Top Right */}
                               <g transform="translate(680, 35)">
-                                <rect x="0" y="0" width="135" height="55" fill="#0f172a" stroke="#00E5FF" strokeWidth="1.5" rx="6" opacity="0.9" />
+                                <rect x="0" y="0" width="135" height="55" fill="#1e293b" stroke="#00E5FF" strokeWidth="1.5" rx="6" opacity="0.9" />
                                 <text x="8" y="16" fill="#00E5FF" fontSize="9" fontWeight="black" fontFamily="monospace">
-                                  TAQUÍMETRO MARCO S'
+                                  MARCO S' (INTERIOR)
                                 </text>
                                 <text x="8" y="32" fill="#fbbf24" fontSize="10" fontWeight="bold" fontFamily="monospace">
-                                  v_bus = {v.toFixed(3)} c
+                                  Tiro Vertical 1D
                                 </text>
                                 <text x="8" y="46" fill="#38bdf8" fontSize="9" fontWeight="bold" fontFamily="monospace">
-                                  γ = {gamma.toFixed(3)} | t' = {tPrime.toFixed(2)}s
+                                  t' = {tPrime.toFixed(2)}s | v_x'=0
                                 </text>
                               </g>
                             </g>
@@ -3751,8 +3872,8 @@ export default function App() {
 
                 {/* VIEWPORT 2: EXTERIOR DESDE LA ESTACIÓN (Observador B) */}
                 {(viewMode === 'split' || viewMode === 'ground') && (
-                  <div className="border-4 bg-white border-[#141414] shadow-[6px_6px_0px_#141414] flex flex-col overflow-hidden relative">
-                    <div className="px-4 py-2 bg-[#141414] text-white flex items-center justify-between font-mono text-xs border-b-4 border-[#141414]">
+                  <div className="border-4 bg-white border-[#1e293b] shadow-[6px_6px_0px_#1e293b] flex flex-col overflow-hidden relative">
+                    <div className="px-4 py-2 bg-[#1e293b] text-white flex items-center justify-between font-mono text-xs border-b-4 border-[#1e293b]">
                       <div className="flex items-center space-x-2">
                         <span className="w-2.5 h-2.5 rounded-full bg-[#FF4D00] animate-ping"></span>
                         <span className="font-bold uppercase tracking-wider text-[#FF4D00]">
@@ -3767,7 +3888,7 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div className="relative w-full h-[320px] overflow-hidden flex items-center justify-center bg-[#020617]">
+                    <div className="relative w-full h-[320px] overflow-hidden flex items-center justify-center bg-[#8ea2c6]">
                       <svg viewBox={`0 0 ${W_VIEW} ${H_VIEW}`} className="w-full h-full select-none">
                         <defs>
                           <linearGradient id="busBodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -3782,9 +3903,12 @@ export default function App() {
                           </radialGradient>
                         </defs>
 
+                        {/* Background sky matching animation */}
+                        <rect width={W_VIEW} height={H_VIEW} fill="#8ea2c6" />
+
                         {/* Grid */}
                         {showGrid && (
-                          <g opacity="0.10">
+                          <g opacity="0.15">
                             {Array.from({ length: 19 }).map((_, i) => (
                               <line key={`g2-v-${i}`} x1={i * 50} y1="0" x2={i * 50} y2={H_VIEW} stroke="#FF4D00" strokeDasharray="4 4" />
                             ))}
@@ -3795,12 +3919,12 @@ export default function App() {
                         )}
 
                         {/* Station Background */}
-                        <image href={bgHouseSuburban} x="0" y="0" width={W_VIEW} height="120" preserveAspectRatio="xMidYMid slice" opacity="0.75" />
+                        <image href={bgHouseSuburban} x="0" y="0" width={W_VIEW} height="120" preserveAspectRatio="xMidYMid slice" opacity="0.85" />
 
                         {/* Station Roof & Signboard */}
-                        <rect x="150" y="5" width="600" height="26" fill="#facc15" stroke="#141414" strokeWidth="3" rx="8" />
-                        <text x="450" y="22" textAnchor="middle" fill="#141414" fontSize="12" fontWeight="black" fontFamily="monospace">
-                          🏛️ ESTACIÓN CENTRAL DE EINSTEIN & GUMBALL (MARCO S)
+                        <rect x="150" y="5" width="600" height="26" fill="#facc15" stroke="#1e293b" strokeWidth="3" rx="8" />
+                        <text x="450" y="22" textAnchor="middle" fill="#0f172a" fontSize="12" fontWeight="black" fontFamily="monospace">
+                          🏛️ ESTACIÓN DE ELMORE (MARCO S EN REPOSO)
                         </text>
 
                         {/* Cartoon Sun with Sunglasses */}
@@ -3882,7 +4006,7 @@ export default function App() {
                         })()}
 
                         {/* Road Surface */}
-                        <rect x="0" y="122" width={W_VIEW} height={H_VIEW - 122} fill="#1e293b" />
+                        <rect x="0" y="122" width={W_VIEW} height={H_VIEW - 122} fill="#334155" />
                         {Array.from({ length: 12 }).map((_, i) => (
                           <rect
                             key={`road-line-${i}`}
@@ -3912,22 +4036,7 @@ export default function App() {
 
                         {/* BUS MOVING EXTERIOR */}
                         <g transform={`translate(${exteriorBusX}, 0)`}>
-                          {v > 0.4 && (
-                            <rect
-                              x={-currentBusWidthExterior / 2 - 6}
-                              y={Y_BUS_TOP - 6}
-                              width={currentBusWidthExterior + 12}
-                              height={H_BUS + 12}
-                              rx="14"
-                              fill="none"
-                              stroke="#00E5FF"
-                              strokeWidth="3"
-                              opacity={0.4 + v * 0.5}
-                              filter="url(#neonGlow1)"
-                            />
-                          )}
-
-                          {v > 0.3 && Array.from({ length: 5 }).map((_, i) => {
+                          {Array.from({ length: 5 }).map((_, i) => {
                             const pOffX = -currentBusWidthExterior / 2 - 10 - ((tGround * 400 + i * 25) % 80);
                             const pOffY = Y_BUS_BOTTOM - 15 + Math.sin(i * 3) * 6;
                             return (
@@ -3949,7 +4058,7 @@ export default function App() {
                             height={H_BUS}
                             rx="10"
                             fill="url(#busBodyGrad)"
-                            stroke="#141414"
+                            stroke="#1e293b"
                             strokeWidth="3.5"
                           />
 
@@ -3975,7 +4084,7 @@ export default function App() {
                           <rect x={-currentBusWidthExterior / 2 - 2} y={Y_BUS_BOTTOM - 25} width="4" height="12" fill="#ef4444" rx="1" />
 
                           {(() => {
-                            const wheelAngle = (tGround * v * 1200) % 360;
+                            const wheelAngle = (tGround * 0.8 * 1200) % 360;
                             const wOffset = Math.min(60, currentBusWidthExterior * 0.28);
                             return (
                               <g>
@@ -4006,11 +4115,11 @@ export default function App() {
                         {/* Object moving in Exterior (Pelota 2D Parábola) */}
                         <g id="proj-ext" transform={`translate(${exteriorBusX}, ${exteriorProjY})`}>
                           <circle cx="0" cy="0" r="14" fill="#00E5FF" opacity="0.3" filter="url(#neonGlow1)" />
-                          <circle cx="0" cy="0" r="11" fill="url(#ball3dGrad1)" stroke="#141414" strokeWidth="2.5" />
+                          <circle cx="0" cy="0" r="11" fill="url(#ball3dGrad1)" stroke="#1e293b" strokeWidth="2.5" />
                           <g transform={`rotate(${ballSpinAngle})`}>
-                            <path d="M -10,0 Q 0,-8 10,0" fill="none" stroke="#141414" strokeWidth="1.8" opacity="0.8" />
-                            <path d="M -10,0 Q 0,8 10,0" fill="none" stroke="#141414" strokeWidth="1.8" opacity="0.8" />
-                            <line x1="0" y1="-11" x2="0" y2="11" stroke="#141414" strokeWidth="1.5" opacity="0.8" />
+                            <path d="M -10,0 Q 0,-8 10,0" fill="none" stroke="#1e293b" strokeWidth="1.8" opacity="0.8" />
+                            <path d="M -10,0 Q 0,8 10,0" fill="none" stroke="#1e293b" strokeWidth="1.8" opacity="0.8" />
+                            <line x1="0" y1="-11" x2="0" y2="11" stroke="#1e293b" strokeWidth="1.5" opacity="0.8" />
                           </g>
 
                           {/* 2D Vector Decomposition Arrows */}
@@ -4019,18 +4128,18 @@ export default function App() {
                               <line x1="0" y1="0" x2="35" y2="0" stroke="#FF4D00" strokeWidth="3" />
                               <polygon points="35,0 27,-4 27,4" fill="#FF4D00" />
                               <text x="38" y="4" fill="#FF4D00" fontSize="9" fontWeight="black" fontFamily="monospace">
-                                v_x = {v.toFixed(2)}c
+                                v_x = 15.0 m/s
                               </text>
 
                               <line x1="0" y1="0" x2="0" y2={-u_y * 45} stroke="#00E5FF" strokeWidth="3" />
                               <polygon points={`0,${-u_y * 45} -4,${-u_y * 45 + (u_y >= 0 ? 7 : -7)} 4,${-u_y * 45 + (u_y >= 0 ? 7 : -7)}`} fill="#00E5FF" />
                               <text x="8" y={-u_y * 22} fill="#00E5FF" fontSize="9" fontWeight="black" fontFamily="monospace">
-                                v_y = {u_y.toFixed(2)}c
+                                v_y = {(u_y * 15).toFixed(1)} m/s
                               </text>
 
                               <line x1="0" y1="0" x2="35" y2={-u_y * 45} stroke="#4ade80" strokeWidth="2.5" strokeDasharray="3 2" />
                               <text x="40" y={-u_y * 45} fill="#4ade80" fontSize="9" fontWeight="black" fontFamily="monospace">
-                                v_total = {totalSpeed.toFixed(2)}c
+                                v_total = {Math.hypot(15, u_y * 15).toFixed(1)} m/s
                               </text>
                             </g>
                           )}
@@ -4048,7 +4157,7 @@ export default function App() {
         {/* DATA FOOTER */}
         <footer className={`border-t-4 flex flex-col md:flex-row items-center justify-between p-4 font-mono text-xs gap-3 transition-all ${
           worldMode === 'world1'
-            ? 'border-[#141414] bg-[#141414] text-white'
+            ? 'border-[#1e293b] bg-[#1e293b] text-white'
             : worldMode === 'world2'
               ? 'border-[#a855f7] bg-[#030712] text-purple-200'
               : 'border-amber-400 bg-[#030712] text-amber-200'
@@ -4056,12 +4165,21 @@ export default function App() {
           <div className="flex items-center space-x-3">
             <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
             <span className="font-bold">
-              Simulación en Tiempo Real ({worldMode === 'world1' ? 'Mundo 1: Terrestre (Tierra)' : worldMode === 'world2' ? 'Mundo 2: Relativista (Nave Espacial)' : 'Mundo 3: Pasillo de Casilleros (L)'})
+              Simulación en Tiempo Real ({worldMode === 'world1' ? 'Mundo 1: Perspectivas Simultáneas del Autobús' : worldMode === 'world2' ? 'Mundo 2: Pista Didáctica MUA/MRU' : worldMode === 'world3' ? 'Mundo 3: Caída Libre' : 'Mundo 4: Tiro Parabólico'})
             </span>
           </div>
           <div className="flex items-center space-x-6 text-cyan-400">
-            <span>Distancia L = {hallwayDist}m</span>
-            <span>Velocidad = {cubeSpeed.toFixed(2)}c</span>
+            {worldMode === 'world1' ? (
+              <>
+                <span>Marco S': Tiro Vertical 1D Puro</span>
+                <span>Marco S: Parábola Compuesta 2D</span>
+              </>
+            ) : (
+              <>
+                <span>Distancia L = {hallwayDist}m</span>
+                <span>Velocidad = {cubeSpeed.toFixed(2)}c</span>
+              </>
+            )}
           </div>
         </footer>
 

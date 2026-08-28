@@ -20,7 +20,7 @@ import {
 import anaisImg from '../assets/images/anais_guide_1787841517089.jpg';
 import { sfx } from '../utils/audioEffects';
 
-export type WorldId = 'world1' | 'world2' | 'world3' | 'world4';
+export type WorldId = 'world1' | 'world2' | 'world3' | 'world4' | 'free';
 
 interface AnaisAnnouncementProps {
   currentWorld: WorldId;
@@ -213,6 +213,44 @@ export const AnaisAnnouncement: React.FC<AnaisAnnouncementProps> = ({
         'Usa el botón "Diana de Darwin (43m)" para cargar el ejercicio calibrado de física.',
         'Observa los vectores verdes (Velocidad) y rojos (Fuerzas) en tiempo real.',
         'Si aciertas en la diana (±2.5m), ¡activarás la fanfarria de confeti y aplausos!',
+      ],
+    },
+
+    free: {
+      worldTitle: 'Mundo Libre: Laboratorio Sandbox de Física de Elmore',
+      subtitle: 'Experimentos sin límites: Gravedad Cero, Colisiones N-Cuerpos & Dinámica Libre',
+      badgeColor: 'bg-cyan-400 text-black',
+      accentColor: '#06b6d4',
+      borderColor: 'border-cyan-400',
+      headerBg: 'bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-600 text-white',
+      icon: <Sparkles className="w-5 h-5 text-yellow-300" />,
+      anaisQuote: '¡Bienvenido a mi Laboratorio Libre! Aquí puedes crear objetos, cambiar la gravedad de 0g a Júpiter, dibujar rampas y experimentar con las 3 leyes de Newton sin restricciones.',
+      liveStatusText: '¡Sandbox activo! Arrastra cuerpos con el cursor, genera explosiones y analiza la conservación de energía en tiempo real.',
+      explanation:
+        'En este laboratorio libre puedes comprobar simultáneamente todos los principios de la mecánica clásica: Conservación del Momento Lineal en colisiones elásticas e inelásticas (P_total = constante), Conservación de la Energía Mecánica (E = Ek + Ep), y la Ley de Gravitación Universal de Newton (F = G·m₁·m₂/r²). Modifica las constantes del universo a tu gusto.',
+      keyFormulas: [
+        {
+          name: 'Conservación del Momento Lineal',
+          formula: '∑ m₁·v₁ + m₂·v₂ = cte',
+          desc: 'En cualquier colisión aislada, la cantidad de movimiento total se conserva.',
+        },
+        {
+          name: 'Energía Cinética',
+          formula: 'Ek = ½ · m · v²',
+          desc: 'Energía asociada al movimiento de cada cuerpo según su masa y velocidad.',
+        },
+        {
+          name: 'Gravitación Universal (N-Cuerpos)',
+          formula: 'F = G · (m₁ · m₂) / r²',
+          desc: 'Atracción gravitacional mutua entre todos los cuerpos del espacio.',
+        },
+      ],
+      didYouKnow:
+        '¡En gravedad cero (0 g), los cuerpos en movimiento continúan en línea recta indefinidamente con velocidad constante debido a la Primera Ley de Newton (Inercia), a menos que choquen!',
+      quickTips: [
+        'Selecciona una entidad (Gumball, Darwin, Roca, etc.) y haz clic en la pantalla para crearla.',
+        'Usa la herramienta Slingshot para lanzar objetos con alta velocidad y ángulo.',
+        'Prueba los presets: Gravedad Cero espacial, Torneo de Rebotes o Lluvia de Personajes.',
       ],
     },
   };
