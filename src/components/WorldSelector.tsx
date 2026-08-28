@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Globe,
   Rocket,
@@ -12,7 +12,9 @@ import {
   Award,
   Wind,
   Volume2,
-  VolumeX
+  VolumeX,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 import bgBusStop from '../assets/images/elmore_bus_stop_1787235581594.jpg';
 import bgSpace from '../assets/images/space_world_bg_1785850978031.jpg';
@@ -23,6 +25,7 @@ import { sfx } from '../utils/audioEffects';
 interface WorldSelectorProps {
   onSelectWorld: (world: 'world1' | 'world2' | 'world3' | 'world4' | 'free') => void;
   onGoHome: () => void;
+  onOpenStory?: () => void;
   userProfile: { name: string; age: string; grade: string } | null;
   onOpenProfileModal: () => void;
 }
@@ -30,10 +33,27 @@ interface WorldSelectorProps {
 export const WorldSelector: React.FC<WorldSelectorProps> = ({
   onSelectWorld,
   onGoHome,
+  onOpenStory,
   userProfile,
   onOpenProfileModal,
 }) => {
   const [isMuted, setIsMuted] = useState<boolean>(() => sfx.getMuted());
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleFs = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handleFs);
+    return () => document.removeEventListener('fullscreenchange', handleFs);
+  }, []);
+
+  const toggleFullscreen = () => {
+    sfx.playLaser(1400);
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
 
   const toggleSound = () => {
     const next = sfx.toggleMute();
@@ -136,24 +156,24 @@ export const WorldSelector: React.FC<WorldSelectorProps> = ({
     {
       id: 'free' as const,
       num: '★',
-      title: 'Mundo Libre: Sandbox de Física',
-      subtitle: 'Laboratorio Abierto N-Cuerpos, Gravitación & Colisiones Libres',
-      badge: '🌌 MUNDO LIBRE • EXPERIMENTACIÓN ILIMITADA',
+      title: 'Mundo Libre: Parque de Diversiones',
+      subtitle: 'Montañas Rusas, Rueda de la Fortuna, Carros Chocones & Cañones',
+      badge: '🎡 MUNDO LIBRE • PARQUE DE DIVERSIONES & CARNAVAL',
       bgImg: bgSpace,
-      accentBorder: 'border-cyan-400',
-      accentBg: 'bg-cyan-400',
-      accentText: 'text-cyan-300',
-      glowColor: 'shadow-[8px_8px_0px_#06b6d4]',
-      hoverGlow: 'hover:shadow-[14px_14px_0px_#38bdf8]',
-      btnBg: 'bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 text-black hover:from-cyan-300 hover:to-blue-400',
+      accentBorder: 'border-yellow-400',
+      accentBg: 'bg-yellow-400',
+      accentText: 'text-yellow-300',
+      glowColor: 'shadow-[8px_8px_0px_#facc15]',
+      hoverGlow: 'hover:shadow-[14px_14px_0px_#fbbf24]',
+      btnBg: 'bg-gradient-to-r from-yellow-400 via-amber-400 to-pink-500 text-black hover:from-yellow-300 hover:to-amber-300',
       icon: Sparkles,
       features: [
-        '🐱 Crea personajes y objetos: Gumball, Darwin, Anais, Rocas, Cohetes, Bombas y Agujeros Negros',
-        '🎛️ Modifica constantes universales: Gravedad (0g a Júpiter), Viento, Elasticidad y Cargas',
-        '✏️ Herramientas interactivas: Slingshot, Dibujar Rampas de rebote y Ondas de choque radiales',
-        '📊 Telemetría en vivo: Conservación del momento lineal (P), Energía Cinética (Ek) y Choques',
+        '🎡 Rueda de la fortuna giratoria con velocidad angular controlable y cabinas',
+        '🎢 Montañas rusas con rieles de aceleración boost, trampolines y loopings 2D',
+        '🏎️ Zona de carros chocones eléctricos hiperelásticos (e = 1.15) con chispas',
+        '🎪 Cañón de feria para disparar a dianas, globos de helio y aros de fuego',
       ],
-      tagline: 'Experimenta sin reglas con la física del universo de Elmore.',
+      tagline: 'Construye y experimenta con atracciones mecánicas y física de carnaval.',
     },
   ];
 
@@ -176,6 +196,20 @@ export const WorldSelector: React.FC<WorldSelectorProps> = ({
               <span>Inicio</span>
             </button>
 
+            {onOpenStory && (
+              <button
+                onClick={() => {
+                  sfx.playWarpWhoosh();
+                  onOpenStory();
+                }}
+                className="px-4 py-2.5 bg-gradient-to-r from-amber-400 via-pink-500 to-purple-600 border-3 border-black text-white font-black text-xs uppercase rounded-2xl shadow-[3px_3px_0px_#000] hover:brightness-110 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center gap-1.5 cursor-pointer rotate-[1deg]"
+                title="Leer la Historia Rara de la Física"
+              >
+                <Zap className="w-4 h-4 text-yellow-300 fill-yellow-300" />
+                <span>👁️ Historia Rara</span>
+              </button>
+            )}
+
             <div>
               <span className="font-black text-lg sm:text-2xl uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-400 to-cyan-400 drop-shadow-[2px_2px_0px_#000]">
                 SELECCIÓN DE MUNDOS
@@ -187,6 +221,19 @@ export const WorldSelector: React.FC<WorldSelectorProps> = ({
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={toggleFullscreen}
+              className={`px-3 py-1.5 border-2 border-black rounded-2xl font-black text-xs uppercase flex items-center gap-1.5 shadow-[2px_2px_0px_#000] transition-all cursor-pointer ${
+                isFullscreen
+                  ? 'bg-amber-400 text-black hover:bg-yellow-300'
+                  : 'bg-slate-800 text-amber-200 hover:bg-slate-700'
+              }`}
+              title="Pantalla Completa (Tecla F)"
+            >
+              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              <span className="hidden sm:inline">{isFullscreen ? 'Salir Full' : 'Full'}</span>
+            </button>
+
             <button
               onClick={toggleSound}
               className={`px-3 py-1.5 border-2 border-black rounded-2xl font-black text-xs uppercase flex items-center gap-1.5 shadow-[2px_2px_0px_#000] transition-all cursor-pointer ${
@@ -236,15 +283,53 @@ export const WorldSelector: React.FC<WorldSelectorProps> = ({
         <div className="text-center space-y-2 py-2">
           <div className="inline-flex items-center gap-2 px-5 py-1.5 bg-gradient-to-r from-yellow-300 via-pink-400 to-cyan-400 border-3 border-black rounded-full text-black font-black text-xs uppercase shadow-[4px_4px_0px_#000] rotate-[-1deg]">
             <Zap className="w-4 h-4 fill-black" />
-            <span>EXPLORA LOS 4 MUNDOS & EL MUNDO LIBRE SANDBOX DE FÍSICA</span>
+            <span>LABORATORIOS DIDÁCTICOS & SIMULADORES DE FÍSICA</span>
             <Zap className="w-4 h-4 fill-black" />
           </div>
           <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-white drop-shadow-[4px_4px_0px_#000]">
-            ELIGE EL MUNDO QUE DESEAS EXPLORAR
+            SIMULADORES Y MUNDOS DE FÍSICA
           </h2>
           <p className="text-sm font-mono text-amber-200 max-w-2xl mx-auto font-medium">
-            Selecciona cualquiera de los mundos a continuación para ingresar directamente a su laboratorio y simulación interactiva.
+            Selecciona un simulador para experimentar con cinemática y leyes físicas, o explora la historia y el parque libre:
           </p>
+
+          {/* Featured Combined Button for Historia & Mundo Libre */}
+          <div className="pt-3 max-w-2xl mx-auto">
+            <div className="bg-[#1e0a38] border-3 border-amber-400 p-3 sm:p-4 rounded-2xl shadow-[6px_6px_0px_#000] flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="text-center sm:text-left">
+                <div className="flex items-center justify-center sm:justify-start gap-1.5 text-yellow-300 text-xs font-black">
+                  <Zap className="w-4 h-4 fill-yellow-300" />
+                  <span>MODOS ESPECIALES DISPONIBLES</span>
+                </div>
+                <p className="text-[11px] font-mono text-pink-200 font-bold">
+                  Historia Rara Cuántica y Parque de Diversiones Mecánico
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {onOpenStory && (
+                  <button
+                    onClick={() => {
+                      sfx.playWarpWhoosh();
+                      onOpenStory();
+                    }}
+                    className="px-3.5 py-2 bg-gradient-to-r from-pink-500 to-purple-600 border-2 border-black text-white font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_#000] hover:brightness-110 cursor-pointer flex items-center gap-1.5 transition-all"
+                  >
+                    <Zap className="w-3.5 h-3.5 fill-yellow-300 text-yellow-300" />
+                    <span>📖 Historia</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={() => handleSelect('free')}
+                  className="px-3.5 py-2 bg-gradient-to-r from-amber-400 to-yellow-300 border-2 border-black text-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_#000] hover:brightness-110 cursor-pointer flex items-center gap-1.5 transition-all"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>🎡 Parque Libre</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* 4 Worlds Grid */}

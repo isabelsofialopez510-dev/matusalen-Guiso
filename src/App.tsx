@@ -51,7 +51,9 @@ import {
   Flame,
   Target,
   Volume2,
-  VolumeX
+  VolumeX,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 import { WorldSelector } from './components/WorldSelector';
 import { World4Parabolic } from './components/World4Parabolic';
@@ -59,6 +61,8 @@ import { World5FreeSandbox } from './components/World5FreeSandbox';
 import { AnaisAnnouncement } from './components/AnaisAnnouncement';
 import { PixelSlider } from './components/PixelSlider';
 import { PixelGumball, PixelDarwin, PixelAnais, PixelPenny, PixelTrioBanner } from './components/PixelCharacters';
+import { PsychedelicIntroScreen } from './components/PsychedelicIntroScreen';
+import { WeirdPhysicsStory } from './components/WeirdPhysicsStory';
 import { sfx } from './utils/audioEffects';
 import {
   getLorentzFactor,
@@ -97,7 +101,7 @@ export interface RaceRecord {
 
 export default function App() {
   // --- Navigation Screen State ---
-  const [activeScreen, setActiveScreen] = useState<'home' | 'worlds' | 'simulation'>('home');
+  const [activeScreen, setActiveScreen] = useState<'home' | 'story' | 'worlds' | 'simulation'>('home');
 
   // --- User Profile / Registration State ---
   const [userProfile, setUserProfile] = useState<{ name: string; age: string; grade: string } | null>(() => {
@@ -205,6 +209,22 @@ export default function App() {
   const [showSquash, setShowSquash] = useState<boolean>(true);
   const [showShadow, setShowShadow] = useState<boolean>(true);
   const [showSpin, setShowSpin] = useState<boolean>(true);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleFs = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handleFs);
+    return () => document.removeEventListener('fullscreenchange', handleFs);
+  }, []);
+
+  const toggleFullscreen = () => {
+    sfx.playLaser(1400);
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
 
   // --- Time accumulators ---
   const [tPrime, setTPrime] = useState<number>(0);  // Proper time (Bus Frame S')
@@ -663,290 +683,45 @@ export default function App() {
     };
   });
 
+  // --- PSYCHEDELIC INTRO SCREEN (PORTADA ANIMADA CON MOVIMIENTO) ---
   if (activeScreen === 'home') {
     return (
-      <div className="min-h-screen w-full bg-[#0d0926] text-white flex flex-col justify-between selection:bg-pink-500 selection:text-white p-4 md:p-8 relative overflow-hidden font-sans bg-[radial-gradient(#ec4899_2px,transparent_2px)] [background-size:28px_28px]">
-        {/* Top Header Bar with Sound Controls */}
-        <div className="w-full max-w-5xl mx-auto flex items-center justify-between z-20 relative">
-          <div className="flex items-center gap-2">
-            <span className="px-3.5 py-1 bg-yellow-400 border-2 border-black rounded-xl text-black font-black text-xs uppercase shadow-[3px_3px_0px_#000] rotate-[-1deg] flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>FÍSICA EDUCATIVA INTERACTIVA</span>
-            </span>
-          </div>
-
-          <button
-            onClick={toggleSound}
-            className={`px-4 py-2 border-3 border-black rounded-2xl font-black text-xs uppercase flex items-center gap-2 shadow-[4px_4px_0px_#000] transition-all cursor-pointer hover:scale-105 active:scale-95 ${
-              isMuted
-                ? 'bg-red-500 text-white hover:bg-red-600'
-                : 'bg-emerald-400 text-black hover:bg-emerald-300'
-            }`}
-            title={isMuted ? 'Activar Efectos de Sonido' : 'Silenciar Efectos de Sonido'}
-          >
-            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4 animate-pulse" />}
-            <span>{isMuted ? '🔇 Audio Mudo' : '🔊 Efectos SFX ON'}</span>
-          </button>
-        </div>
-
-        {/* Ambient Glows & Maximalist Radial Gradients */}
-        <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-gradient-to-r from-pink-500 via-purple-500 to-yellow-400 rounded-full blur-[150px] opacity-50 pointer-events-none animate-pulse" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-gradient-to-r from-cyan-400 via-emerald-400 to-purple-600 rounded-full blur-[150px] opacity-50 pointer-events-none animate-pulse" />
-        <div className="absolute top-[40%] right-[15%] w-[400px] h-[400px] bg-amber-400/30 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-[30%] left-[10%] w-[400px] h-[400px] bg-pink-600/30 rounded-full blur-[120px] pointer-events-none" />
-
-        {/* ================= MAXIMALIST WEIRD CREATURES & DOODLES (CRIATURAS RARAS) ================= */}
-
-        {/* CREATURE 1: Three-Eyed Purple Tentacle Monster (Top-Left) */}
-        <div className="absolute top-6 left-4 lg:left-12 pointer-events-none z-0 hover:scale-110 transition-transform hidden sm:block animate-bounce" style={{ animationDuration: '3.5s' }}>
-          <svg width="120" height="120" viewBox="0 0 100 100" fill="none">
-            {/* Body */}
-            <path d="M 20 70 Q 10 30 50 15 Q 90 30 80 70 Q 50 85 20 70 Z" fill="#a855f7" stroke="#141414" strokeWidth="4" />
-            {/* Tentacles */}
-            <path d="M 25 70 Q 15 90 5 80" stroke="#a855f7" strokeWidth="8" strokeLinecap="round" />
-            <path d="M 25 70 Q 15 90 5 80" stroke="#141414" strokeWidth="3" strokeLinecap="round" fill="none" />
-            <path d="M 50 78 Q 50 98 40 92" stroke="#a855f7" strokeWidth="8" strokeLinecap="round" />
-            <path d="M 50 78 Q 50 98 40 92" stroke="#141414" strokeWidth="3" strokeLinecap="round" fill="none" />
-            <path d="M 75 70 Q 85 90 95 82" stroke="#a855f7" strokeWidth="8" strokeLinecap="round" />
-            <path d="M 75 70 Q 85 90 95 82" stroke="#141414" strokeWidth="3" strokeLinecap="round" fill="none" />
-            {/* Eyes */}
-            <circle cx="35" cy="35" r="10" fill="#FFF" stroke="#141414" strokeWidth="2.5" />
-            <circle cx="35" cy="35" r="4" fill="#141414" />
-            <circle cx="65" cy="35" r="10" fill="#FFF" stroke="#141414" strokeWidth="2.5" />
-            <circle cx="65" cy="35" r="4" fill="#141414" />
-            <circle cx="50" cy="22" r="8" fill="#FFF" stroke="#141414" strokeWidth="2.5" />
-            <circle cx="50" cy="22" r="3" fill="#141414" />
-            {/* Wide Mouth with Sharp Tooth */}
-            <path d="M 30 55 Q 50 70 70 55" fill="#141414" stroke="#141414" strokeWidth="2" />
-            <polygon points="45,55 50,63 55,55" fill="#FFF" />
-          </svg>
-          <div className="absolute -top-4 -right-8 bg-yellow-300 text-black px-2 py-0.5 rounded-lg border-2 border-black font-mono font-black text-[10px] shadow-[2px_2px_0px_#000] rotate-[6deg]">
-            👾 ¡GRAVEDAD!
-          </div>
-        </div>
-
-        {/* CREATURE 2: Green Slime Monster with Glasses & Formula (Top-Right) */}
-        <div className="absolute top-10 right-6 lg:right-16 pointer-events-none z-0 hidden sm:block animate-pulse" style={{ animationDuration: '4s' }}>
-          <svg width="110" height="110" viewBox="0 0 100 100" fill="none">
-            {/* Slime Body */}
-            <path d="M 20 50 Q 20 10 50 15 Q 80 10 80 50 Q 90 80 50 85 Q 10 80 20 50 Z" fill="#22c55e" stroke="#141414" strokeWidth="4" />
-            {/* Big Single Eye */}
-            <circle cx="50" cy="40" r="16" fill="#FFF" stroke="#141414" strokeWidth="3" />
-            <circle cx="50" cy="40" r="7" fill="#141414" />
-            <circle cx="52" cy="38" r="2.5" fill="#FFF" />
-            {/* Nerd Glasses */}
-            <rect x="28" y="28" width="22" height="22" rx="4" fill="none" stroke="#141414" strokeWidth="3" />
-            <rect x="50" y="28" width="22" height="22" rx="4" fill="none" stroke="#141414" strokeWidth="3" />
-            <line x1="48" y1="38" x2="52" y2="38" stroke="#141414" strokeWidth="3" />
-            {/* Tongue */}
-            <path d="M 40 65 Q 50 80 55 65" fill="#ef4444" stroke="#141414" strokeWidth="2" />
-          </svg>
-          <div className="absolute -bottom-2 -left-6 bg-pink-500 text-white px-2.5 py-0.5 rounded-lg border-2 border-black font-mono font-black text-[10px] shadow-[2px_2px_0px_#000] rotate-[-8deg]">
-            ⚡ E = mc²
-          </div>
-        </div>
-
-        {/* CREATURE 3: Flying Cyclops Alien UFO (Middle-Left) */}
-        <div className="absolute top-1/3 left-2 lg:left-8 pointer-events-none z-0 hidden md:block animate-bounce" style={{ animationDuration: '5s' }}>
-          <svg width="120" height="100" viewBox="0 0 120 100" fill="none">
-            {/* Glass Dome */}
-            <path d="M 35 45 A 25 25 0 0 1 85 45 Z" fill="#38bdf8" opacity="0.8" stroke="#141414" strokeWidth="3" />
-            {/* Flying Saucer Base */}
-            <ellipse cx="60" cy="55" rx="50" ry="16" fill="#f43f5e" stroke="#141414" strokeWidth="4" />
-            <ellipse cx="60" cy="55" rx="40" ry="8" fill="#fbbf24" stroke="#141414" strokeWidth="2" />
-            {/* Alien inside dome */}
-            <circle cx="60" cy="38" r="10" fill="#a3e635" stroke="#141414" strokeWidth="2" />
-            <circle cx="60" cy="36" r="4" fill="#FFF" stroke="#141414" strokeWidth="1" />
-            <circle cx="60" cy="36" r="2" fill="#141414" />
-            <path d="M 56 42 Q 60 45 64 42" fill="none" stroke="#141414" strokeWidth="1.5" />
-            {/* Thruster Beams */}
-            <polygon points="40,68 30,90 50,90" fill="#00E5FF" opacity="0.8" stroke="#141414" strokeWidth="2" />
-            <polygon points="70,68 60,90 80,90" fill="#00E5FF" opacity="0.8" stroke="#141414" strokeWidth="2" />
-          </svg>
-          <div className="absolute top-0 -right-6 bg-cyan-400 text-black px-2 py-0.5 rounded-lg border-2 border-black font-mono font-black text-[10px] shadow-[2px_2px_0px_#000] rotate-[5deg]">
-            🛸 v = 0.8c
-          </div>
-        </div>
-
-        {/* CREATURE 4: Brain Monster with Lightning Ears (Middle-Right) */}
-        <div className="absolute top-1/2 right-4 lg:right-10 pointer-events-none z-0 hidden md:block animate-pulse" style={{ animationDuration: '3s' }}>
-          <svg width="110" height="110" viewBox="0 0 100 100" fill="none">
-            {/* Brain Body */}
-            <circle cx="50" cy="50" r="35" fill="#00E5FF" stroke="#141414" strokeWidth="4" />
-            {/* Brain Squiggles */}
-            <path d="M 30 35 C 30 25, 45 25, 45 35 C 45 45, 30 45, 30 55" stroke="#141414" strokeWidth="2.5" fill="none" />
-            <path d="M 70 35 C 70 25, 55 25, 55 35 C 55 45, 70 45, 70 55" stroke="#141414" strokeWidth="2.5" fill="none" />
-            {/* Googly Eyes */}
-            <circle cx="42" cy="60" r="7" fill="#FFF" stroke="#141414" strokeWidth="2" />
-            <circle cx="42" cy="60" r="3" fill="#141414" />
-            <circle cx="58" cy="60" r="7" fill="#FFF" stroke="#141414" strokeWidth="2" />
-            <circle cx="58" cy="60" r="3" fill="#141414" />
-            {/* Lightning Ears */}
-            <polygon points="12,30 22,40 16,42 26,55 18,48" fill="#facc15" stroke="#141414" strokeWidth="2" />
-            <polygon points="88,30 78,40 84,42 74,55 82,48" fill="#facc15" stroke="#141414" strokeWidth="2" />
-          </svg>
-          <div className="absolute -top-3 -left-8 bg-yellow-400 text-black px-2 py-0.5 rounded-lg border-2 border-black font-mono font-black text-[10px] shadow-[2px_2px_0px_#000] rotate-[-6deg]">
-            🧠 ¡ACELERACIÓN!
-          </div>
-        </div>
-
-        {/* CREATURE 5: Striped Caterpillar Worm Monster with Spiral Glasses (Bottom-Left) */}
-        <div className="absolute bottom-12 left-4 lg:left-14 pointer-events-none z-0 hidden lg:block animate-bounce" style={{ animationDuration: '4.5s' }}>
-          <svg width="130" height="90" viewBox="0 0 130 90" fill="none">
-            {/* Body Segments */}
-            <circle cx="20" cy="55" r="18" fill="#f97316" stroke="#141414" strokeWidth="3" />
-            <circle cx="42" cy="50" r="18" fill="#facc15" stroke="#141414" strokeWidth="3" />
-            <circle cx="64" cy="52" r="18" fill="#f97316" stroke="#141414" strokeWidth="3" />
-            <circle cx="86" cy="48" r="18" fill="#facc15" stroke="#141414" strokeWidth="3" />
-            <circle cx="108" cy="40" r="22" fill="#FF007F" stroke="#141414" strokeWidth="3.5" />
-            {/* Eyes with Spiral */}
-            <circle cx="100" cy="32" r="7" fill="#FFF" stroke="#141414" strokeWidth="2" />
-            <path d="M 98 32 A 2 2 0 0 1 102 32" stroke="#141414" strokeWidth="2" fill="none" />
-            <circle cx="116" cy="32" r="7" fill="#FFF" stroke="#141414" strokeWidth="2" />
-            <path d="M 114 32 A 2 2 0 0 1 118 32" stroke="#141414" strokeWidth="2" fill="none" />
-            {/* Antennae */}
-            <line x1="104" y1="20" x2="98" y2="6" stroke="#141414" strokeWidth="3" />
-            <circle cx="98" cy="5" r="4" fill="#00E5FF" stroke="#141414" strokeWidth="1.5" />
-            <line x1="112" y1="20" x2="118" y2="6" stroke="#141414" strokeWidth="3" />
-            <circle cx="118" cy="5" r="4" fill="#00E5FF" stroke="#141414" strokeWidth="1.5" />
-          </svg>
-          <div className="absolute -top-3 left-6 bg-emerald-400 text-black px-2 py-0.5 rounded-lg border-2 border-black font-mono font-black text-[10px] shadow-[2px_2px_0px_#000] rotate-[4deg]">
-            🐛 F = m·a
-          </div>
-        </div>
-
-        {/* CREATURE 6: Cat-Eared Star Monster (Bottom-Right) */}
-        <div className="absolute bottom-16 right-6 lg:right-16 pointer-events-none z-0 hidden lg:block animate-pulse" style={{ animationDuration: '3.8s' }}>
-          <svg width="110" height="110" viewBox="0 0 100 100" fill="none">
-            {/* Star Body */}
-            <polygon points="50,10 62,38 90,38 68,56 76,85 50,68 24,85 32,56 10,38 38,38" fill="#facc15" stroke="#141414" strokeWidth="4" />
-            {/* Cat Ears */}
-            <polygon points="32,25 25,5 42,18" fill="#FF007F" stroke="#141414" strokeWidth="2.5" />
-            <polygon points="68,25 75,5 58,18" fill="#FF007F" stroke="#141414" strokeWidth="2.5" />
-            {/* Cute Eyes & Blushing */}
-            <circle cx="40" cy="42" r="4" fill="#141414" />
-            <circle cx="60" cy="42" r="4" fill="#141414" />
-            <ellipse cx="34" cy="48" rx="4" ry="2" fill="#FF007F" opacity="0.6" />
-            <ellipse cx="66" cy="48" rx="4" ry="2" fill="#FF007F" opacity="0.6" />
-            <path d="M 45 48 Q 50 53 55 48" fill="none" stroke="#141414" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-          <div className="absolute -top-2 -left-6 bg-pink-500 text-white px-2 py-0.5 rounded-lg border-2 border-black font-mono font-black text-[10px] shadow-[2px_2px_0px_#000] rotate-[-5deg]">
-            ⭐ ¡BOING!
-          </div>
-        </div>
-
-        {/* FLOATING COMIC POP-ART STICKERS & SPEECH BUBBLES */}
-        <div className="absolute top-28 left-1/4 bg-yellow-300 border-3 border-black text-black font-mono font-black text-xs px-3 py-1.5 rounded-2xl shadow-[4px_4px_0px_#000] rotate-[-6deg] hidden xl:block animate-bounce" style={{ animationDuration: '6s' }}>
-          💥 POW! FÍSICA DIVERTIDA
-        </div>
-        <div className="absolute bottom-32 right-1/4 bg-cyan-300 border-3 border-black text-black font-mono font-black text-xs px-3 py-1.5 rounded-2xl shadow-[4px_4px_0px_#000] rotate-[8deg] hidden xl:block animate-pulse" style={{ animationDuration: '4s' }}>
-          🌀 γ = 1 / √(1 - v²/c²)
-        </div>
-        <div className="absolute top-1/2 left-6 bg-pink-400 border-3 border-black text-white font-mono font-black text-xs px-3 py-1.5 rounded-2xl shadow-[4px_4px_0px_#000] rotate-[12deg] hidden xl:block">
-          ⚡ BZZZT!
-        </div>
-
-        {/* Hero Section */}
-        <main className="w-full max-w-4xl mx-auto my-auto flex flex-col items-center justify-center text-center space-y-8 z-10 py-6">
-          {/* MAIN TITLE: "esquizofrenia" */}
-          <div className="space-y-2">
-            <h1 className="text-6xl sm:text-8xl md:text-9xl font-black uppercase tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-500 via-emerald-400 via-cyan-400 to-purple-500 drop-shadow-[6px_6px_0px_#000]">
-              esquizofrenia
-            </h1>
-          </div>
-
-          {/* MAIN START BUTTON & REGISTER BUTTON */}
-          <div className="pt-2 flex flex-col items-center space-y-4 w-full max-w-xl">
-            {/* Start Button */}
-            <button
-              onClick={() => {
-                sfx.playWarpWhoosh();
-                setActiveScreen('worlds');
-              }}
-              className="w-full px-10 py-6 bg-gradient-to-r from-yellow-300 via-pink-400 via-emerald-400 to-cyan-400 border-5 border-black text-black font-black text-2xl sm:text-3xl uppercase tracking-wider rounded-3xl shadow-[10px_10px_0px_#000] hover:shadow-[16px_16px_0px_#00E5FF] hover:-translate-y-1.5 active:translate-x-1 active:translate-y-1 transition-all flex items-center justify-center gap-4 cursor-pointer group rotate-[-1deg]"
-            >
-              <Zap className="w-10 h-10 fill-yellow-300 text-black group-hover:animate-bounce" />
-              <span>¡ ENTRAR A LOS 4 MUNDOS !</span>
-              <ArrowRight className="w-10 h-10 text-black group-hover:translate-x-3 transition-transform" />
-            </button>
-
-            {/* BOTÓN DE REGISTRO */}
-            <button
-              onClick={() => {
-                sfx.playPop();
-                setRegName(userProfile?.name || '');
-                setRegAge(userProfile?.age || '');
-                setRegGrade(userProfile?.grade || '🎒 Primaria / Infantil (6 - 11 años)');
-                setShowRegisterModal(true);
-              }}
-              className="w-full px-8 py-4 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 border-4 border-black text-white font-black text-lg sm:text-xl uppercase tracking-wider rounded-2xl shadow-[8px_8px_0px_#000] hover:shadow-[12px_12px_0px_#facc15] hover:-translate-y-1 active:translate-x-1 active:translate-y-1 transition-all flex items-center justify-center gap-3 cursor-pointer group rotate-[1deg]"
-            >
-              <UserPlus className="w-7 h-7 text-yellow-300 group-hover:scale-125 transition-transform" />
-              <span>{userProfile ? '✏️ EDITAR MI PERFIL DE REGISTRO' : '📝 REGISTRARSE (TODAS LAS EDADES)'}</span>
-            </button>
-
-            {/* User Profile Badge if registered */}
-            {userProfile && (
-              <div className="flex flex-wrap items-center justify-center gap-3 bg-[#16123b]/95 border-3 border-yellow-400 px-6 py-2.5 rounded-2xl shadow-[5px_5px_0px_#000] text-xs font-mono font-bold text-amber-200">
-                <span className="bg-pink-500 text-white px-2.5 py-1 rounded-lg border-2 border-black font-black flex items-center gap-1">
-                  <User className="w-4 h-4 text-yellow-300" />
-                  <span>Estudiante: {userProfile.name}</span>
-                </span>
-                <span>• Edad: <strong className="text-cyan-300">{userProfile.age}</strong></span>
-                <span>• Grado: <strong className="text-emerald-300">{userProfile.grade}</strong></span>
-              </div>
-            )}
-          </div>
-
-          {/* CREDITS BANNER (Créditos del Proyecto) */}
-          <div className="w-full max-w-2xl bg-[#16123b]/95 border-4 border-yellow-400 rounded-3xl p-6 shadow-[10px_10px_0px_#facc15] text-center space-y-4 relative overflow-hidden">
-            <div className="inline-flex items-center gap-2 px-4 py-1 bg-yellow-400 border-2 border-black rounded-full text-black font-black text-xs uppercase shadow-[3px_3px_0px_#000] rotate-[-1deg]">
-              <span>🏫 CRÉDITOS DEL PROYECTO ACADÉMICO</span>
-            </div>
-
-            <h2 className="text-2xl sm:text-3xl font-black uppercase text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-400 to-cyan-400 drop-shadow-[2px_2px_0px_#000]">
-              Institución Educativa Josefa Campos
-            </h2>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1 text-xs font-mono font-bold">
-              <div className="bg-[#0d0926] p-4 rounded-2xl border-2 border-pink-500/80 text-pink-200 flex flex-col items-center justify-center gap-1 shadow-[4px_4px_0px_#000]">
-                <span className="text-yellow-300 font-black uppercase text-xs flex items-center gap-1">
-                  <span>✍️ Autores:</span>
-                </span>
-                <span className="text-white text-base font-black">Isabel Sofía López</span>
-                <span className="text-white text-base font-black">& Juan Alejandro Mejía</span>
-              </div>
-
-              <div className="bg-[#0d0926] p-4 rounded-2xl border-2 border-cyan-400/80 text-cyan-200 flex flex-col items-center justify-center gap-1 shadow-[4px_4px_0px_#000]">
-                <span className="text-cyan-300 font-black uppercase text-xs flex items-center gap-1">
-                  <span>👨‍🏫 Docente Orientador:</span>
-                </span>
-                <span className="text-white text-base font-black">Jorge Armando Jaramillo Bravo</span>
-              </div>
-            </div>
-          </div>
-        </main>
-
-        {/* Footer */}
-        <footer className="w-full max-w-5xl mx-auto py-4 border-t-3 border-black text-center font-mono text-xs text-amber-200 z-10 flex flex-col md:flex-row items-center justify-between gap-3 bg-[#16123b]/90 p-5 rounded-2xl border-3 border-black shadow-[6px_6px_0px_#000]">
-          <div className="text-left space-y-0.5">
-            <p className="font-black text-white text-sm">🏛️ Institución Educativa Josefa Campos</p>
-            <p className="text-[11px] text-pink-300 font-bold">Autores: Isabel Sofía López y Juan Alejandro Mejía</p>
-            <p className="text-[11px] text-cyan-300 font-bold">Docente: Jorge Armando Jaramillo Bravo</p>
-          </div>
-          <div className="text-right flex flex-col items-center md:items-end gap-1">
-            <span className="text-pink-400 font-black flex items-center gap-1">
-              <span>Relatividad</span> | <span>MUA</span> | <span>Caída Libre</span> 🌈
-            </span>
-            <span className="text-[10px] text-slate-400 font-mono">🎨 Esquizofrenia Physics Cartoon App &copy; 2026</span>
-          </div>
-        </footer>
+      <>
+        <PsychedelicIntroScreen
+          onStartStory={() => {
+            sfx.playWarpWhoosh();
+            setActiveScreen('story');
+          }}
+          onOpenWorlds={() => {
+            sfx.playWarpWhoosh();
+            setActiveScreen('worlds');
+          }}
+          onOpenSandbox={() => {
+            sfx.playWarpWhoosh();
+            setWorldMode('free');
+            setActiveScreen('simulation');
+          }}
+          onOpenWorldDirect={(targetWorld) => {
+            sfx.playWarpWhoosh();
+            setWorldMode(targetWorld);
+            setActiveScreen('simulation');
+          }}
+          onOpenProfile={() => {
+            sfx.playPop();
+            setRegName(userProfile?.name || '');
+            setRegAge(userProfile?.age || '');
+            setRegGrade(userProfile?.grade || '🎒 Primaria / Infantil (6 - 11 años)');
+            setShowRegisterModal(true);
+          }}
+          userProfile={userProfile}
+          isMuted={isMuted}
+          onToggleSound={toggleSound}
+        />
 
         {/* REGISTRATION MODAL (POP-ART CARTOON AESTHETIC) */}
         {showRegisterModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-            <div className="relative w-full max-w-lg bg-[#16123b] border-4 border-black rounded-3xl p-6 sm:p-8 shadow-[12px_12px_0px_#FF007F] text-white font-sans bg-[radial-gradient(#ec4899_1.5px,transparent_1.5px)] [background-size:20px_20px]">
-              
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in font-mono">
+            <div className="relative w-full max-w-lg bg-[#16123b] border-4 border-amber-400 rounded-3xl p-6 sm:p-8 shadow-[12px_12px_0px_#FF007F] text-white font-sans bg-[radial-gradient(#ec4899_1.5px,transparent_1.5px)] [background-size:20px_20px]">
               {/* Close Button */}
               <button
                 onClick={() => setShowRegisterModal(false)}
@@ -959,13 +734,13 @@ export default function App() {
               <div className="text-center space-y-2 mb-6">
                 <div className="inline-flex items-center gap-2 px-4 py-1 bg-yellow-400 border-2 border-black rounded-full text-black font-black text-xs uppercase shadow-[3px_3px_0px_#000] rotate-[-2deg]">
                   <GraduationCap className="w-4 h-4 fill-black" />
-                  <span>PARA TODAS LAS EDADES 🌈</span>
+                  <span>PASAPORTE DE FÍSICA CUÁNTICA 🌈</span>
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-black uppercase text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-400 to-cyan-400 drop-shadow-[2px_2px_0px_#000]">
                   📝 REGISTRO DE ESTUDIANTE
                 </h2>
                 <p className="text-xs font-mono text-amber-200 font-bold">
-                  Ingresa tu información para tu pasaporte de física multiversal
+                  Ingresa tus datos para tu pasaporte de física multiversal
                 </p>
               </div>
 
@@ -987,7 +762,7 @@ export default function App() {
                   />
                 </div>
 
-                {/* Field 2: Edad (Para todas las edades) */}
+                {/* Field 2: Edad */}
                 <div className="space-y-1.5 text-left">
                   <label className="block text-xs font-mono font-black uppercase tracking-wider text-cyan-300 flex items-center gap-1.5">
                     <Star className="w-4 h-4 text-yellow-300 fill-yellow-300" />
@@ -1002,7 +777,6 @@ export default function App() {
                       placeholder="Ej: 10 años, 16 años, Adulto, etc."
                       className="w-full px-4 py-3 bg-[#0d0926] border-3 border-black rounded-2xl text-white font-bold placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/50 shadow-[4px_4px_0px_#000]"
                     />
-                    {/* Quick age options */}
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       {['7 años', '12 años', '16 años', '20+ años', 'Todas las edades 🌈'].map((ageOption) => (
                         <button
@@ -1022,7 +796,7 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Field 3: Grado o Nivel Educativo */}
+                {/* Field 3: Grado */}
                 <div className="space-y-1.5 text-left">
                   <label className="block text-xs font-mono font-black uppercase tracking-wider text-emerald-300 flex items-center gap-1.5">
                     <GraduationCap className="w-4 h-4 text-emerald-400" />
@@ -1041,7 +815,6 @@ export default function App() {
                     <option value="✨ Otro / Personalizado">✨ Otro / Personalizado</option>
                   </select>
 
-                  {/* Custom grade input if selected */}
                   {regGrade === '✨ Otro / Personalizado' && (
                     <input
                       type="text"
@@ -1080,11 +853,34 @@ export default function App() {
             </div>
           </div>
         )}
-      </div>
+      </>
     );
   }
 
-  // --- WORLDS SELECTION SCREEN (HUB DE LOS 4 MUNDOS) ---
+  // --- WEIRD PHYSICS STORY SCREEN (HISTORIA RARA DE LA FÍSICA) ---
+  if (activeScreen === 'story') {
+    return (
+      <WeirdPhysicsStory
+        onGoHome={() => setActiveScreen('home')}
+        onOpenWorld={(world) => {
+          if (world === 'world5') {
+            setWorldMode('free');
+          } else {
+            setWorldMode(world);
+          }
+          if (world === 'world1' || world === 'world2') setProjectileType('ball');
+          if (world === 'world3') setProjectileType('cube');
+          resetSimulation();
+          setActiveScreen('simulation');
+        }}
+        userProfile={userProfile}
+        isMuted={isMuted}
+        onToggleSound={toggleSound}
+      />
+    );
+  }
+
+  // --- WORLDS SELECTION SCREEN (HUB DE LOS 4 MUNDOS + MUNDO LIBRE) ---
   if (activeScreen === 'worlds') {
     return (
       <>
@@ -1097,6 +893,7 @@ export default function App() {
             setActiveScreen('simulation');
           }}
           onGoHome={() => setActiveScreen('home')}
+          onOpenStory={() => setActiveScreen('story')}
           userProfile={userProfile}
           onOpenProfileModal={() => {
             setRegName(userProfile?.name || '');
@@ -1283,7 +1080,7 @@ export default function App() {
                 : 'bg-[#081a2e] border-cyan-400 shadow-[0_0_25px_rgba(6,182,212,0.35)] text-cyan-100'
       }`}>
         <div className="flex items-center space-x-3">
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             <button
               onClick={() => setActiveScreen('home')}
               className={`px-3 py-2 border-2 font-black text-xs uppercase flex items-center gap-1.5 transition-all cursor-pointer ${
@@ -1316,10 +1113,39 @@ export default function App() {
                         ? 'bg-emerald-400 text-black hover:bg-emerald-300 border-black'
                         : 'bg-yellow-400 text-black hover:bg-yellow-300 border-black'
               }`}
-              title="Ver selector de los 4 mundos y mundo libre"
+              title="Ver selector de los 4 mundos y laboratorios de física"
             >
               <LayoutGrid className="w-4 h-4" />
-              <span>Mundos</span>
+              <span>🎮 Simuladores</span>
+            </button>
+
+            <button
+              onClick={() => {
+                sfx.playWarpWhoosh();
+                setActiveScreen('story');
+              }}
+              className="px-3 py-2 border-2 border-black bg-gradient-to-r from-amber-400 via-pink-500 to-purple-600 text-white font-black text-xs uppercase flex items-center gap-1.5 shadow-[2px_2px_0px_#000] hover:brightness-110 transition-all cursor-pointer"
+              title="Ir a la Historia Rara de la Física"
+            >
+              <Zap className="w-4 h-4 text-yellow-300 fill-yellow-300" />
+              <span className="hidden sm:inline">📖 Historia Rara</span>
+            </button>
+
+            <button
+              onClick={() => {
+                sfx.playLaser(1400);
+                setWorldMode('free');
+                setActiveScreen('simulation');
+              }}
+              className={`px-3 py-2 border-2 font-black text-xs uppercase flex items-center gap-1.5 shadow-[2px_2px_0px_#000] transition-all cursor-pointer ${
+                worldMode === 'free'
+                  ? 'bg-yellow-400 text-black border-yellow-200 ring-2 ring-yellow-400'
+                  : 'bg-gradient-to-r from-emerald-400 to-teal-500 text-black border-black hover:brightness-110'
+              }`}
+              title="Abrir Mundo Libre: Parque de Diversiones"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span className="hidden sm:inline">🎡 Parque Libre</span>
             </button>
           </div>
           <div>
@@ -1338,7 +1164,7 @@ export default function App() {
                       ? 'Mundo 3: Caída Libre & Resistencia al Aire con Darwin'
                       : worldMode === 'world4'
                         ? 'Mundo 4: Tiro Parabólico 2D Balístico (Jardín Verde)'
-                        : 'Mundo Libre: Laboratorio de Física y Sandbox Abierto'}
+                        : 'Mundo Libre: Parque de Diversiones & Carnaval Mecánico'}
               </h1>
               <span className={`px-2 py-0.5 text-[10px] font-black uppercase border-2 ${
                 worldMode === 'world1'
@@ -1349,9 +1175,9 @@ export default function App() {
                       ? 'bg-orange-500 text-white border-orange-300 shadow-[0_0_10px_rgba(251,146,60,0.6)]'
                       : worldMode === 'world4'
                         ? 'bg-emerald-400 text-black border-emerald-300 shadow-[0_0_10px_rgba(52,211,153,0.6)]'
-                        : 'bg-cyan-400 text-black border-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.6)]'
+                        : 'bg-yellow-400 text-black border-yellow-300 shadow-[0_0_10px_rgba(250,204,21,0.6)]'
               }`}>
-                {worldMode === 'world1' ? 'Mundo 1 • Azul' : worldMode === 'world2' ? 'Mundo 2 • Rosado' : worldMode === 'world3' ? 'Mundo 3 • Naranja' : worldMode === 'world4' ? 'Mundo 4 • Verde' : 'Mundo Libre'}
+                {worldMode === 'world1' ? 'Mundo 1 • Azul' : worldMode === 'world2' ? 'Mundo 2 • Rosado' : worldMode === 'world3' ? 'Mundo 3 • Naranja' : worldMode === 'world4' ? 'Mundo 4 • Verde' : '🎡 Parque de Diversiones'}
               </span>
             </div>
 
@@ -1365,7 +1191,7 @@ export default function App() {
                 <span className="text-amber-300 font-extrabold">({userProfile.age} • {userProfile.grade})</span>
               </div>
             )}
-            <p className={`text-xs font-mono font-semibold ${worldMode === 'world1' ? 'text-sky-200' : worldMode === 'world2' ? 'text-pink-200' : worldMode === 'world3' ? 'text-orange-200' : worldMode === 'world4' ? 'text-emerald-200' : 'text-cyan-200'}`}>
+            <p className={`text-xs font-mono font-semibold ${worldMode === 'world1' ? 'text-sky-200' : worldMode === 'world2' ? 'text-pink-200' : worldMode === 'world3' ? 'text-orange-200' : worldMode === 'world4' ? 'text-emerald-200' : 'text-yellow-200'}`}>
               {worldMode === 'world1'
                 ? '🌍 Mundo 1: Perspectivas Simultáneas — Marco S\' (Interior 1D) vs Marco S (Exterior 2D) con Gumball'
                 : worldMode === 'world2'
@@ -1374,13 +1200,27 @@ export default function App() {
                     ? '🪨 Mundo 3: Caída Libre con Resistencia de Aire — Análisis MUA y Velocidad Terminal MRU con Darwin'
                     : worldMode === 'world4'
                       ? '🎯 Mundo 4: Tiro Parabólico Balístico con v₀ = 28 m/s, θ = 16.3°, alcance X = 43 m y H_max = 3.3 m'
-                      : '🌌 Mundo Libre: Sandbox con Gravedad variable, Cuerpos N-Partículas, Dibujo de Rampas y Conservación de Energía'}
+                      : '🎡 Mundo Libre: Parque de Diversiones — Montañas Rusas con Loopings, Rueda de la Fortuna, Carros Chocones y Cañones'}
             </p>
           </div>
         </div>
 
         {/* Action Controls & World Switcher Header */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Fullscreen Toggle Button */}
+          <button
+            onClick={toggleFullscreen}
+            className={`px-3 py-1.5 font-bold text-xs uppercase border-2 transition-all flex items-center gap-1.5 shadow-[2px_2px_0px_#000] cursor-pointer ${
+              isFullscreen
+                ? 'bg-amber-400 text-black hover:bg-yellow-300 border-black'
+                : 'bg-slate-800 text-amber-200 hover:bg-slate-700 border-amber-400'
+            }`}
+            title="Pantalla Completa (Tecla F)"
+          >
+            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">{isFullscreen ? 'Salir Full' : 'Full'}</span>
+          </button>
+
           {/* Audio Toggle Button */}
           <button
             onClick={toggleSound}

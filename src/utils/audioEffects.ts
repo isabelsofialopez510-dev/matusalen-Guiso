@@ -448,6 +448,65 @@ class SoundManager {
     osc.start(now);
     osc.stop(now + 0.36);
   }
+
+  // --- 14. RETRO LASER ZAP EFFECT ---
+  public playLaser(freq = 1600) {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    const baseFreq = freq < 10 ? 1600 : freq;
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(baseFreq, now);
+    osc.frequency.exponentialRampToValueAtTime(120, now + 0.18);
+
+    gain.gain.setValueAtTime(0.22 * this.volume, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.19);
+  }
+
+  // --- 15. TRIUMPHANT FANFARE EFFECT ---
+  public playFanfare() {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    const chords = [
+      { f: 523.25, t: 0 },    // C5
+      { f: 659.25, t: 0.1 },  // E5
+      { f: 783.99, t: 0.2 },  // G5
+      { f: 1046.50, t: 0.35 }, // C6
+    ];
+
+    chords.forEach(({ f, t }) => {
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      const st = now + t;
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(f, st);
+      gain.gain.setValueAtTime(0.001, st);
+      gain.gain.linearRampToValueAtTime(0.25 * this.volume, st + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, st + 0.35);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(st);
+      osc.stop(st + 0.36);
+    });
+  }
 }
 
 export const sfx = new SoundManager();
