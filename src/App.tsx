@@ -863,13 +863,19 @@ export default function App() {
       <WeirdPhysicsStory
         onGoHome={() => setActiveScreen('home')}
         onOpenWorld={(world) => {
-          if (world === 'world5') {
+          if (world === 'world5' || world === 'free') {
             setWorldMode('free');
           } else {
             setWorldMode(world);
           }
           if (world === 'world1' || world === 'world2') setProjectileType('ball');
           if (world === 'world3') setProjectileType('cube');
+          resetSimulation();
+          setActiveScreen('simulation');
+        }}
+        onFinishStoryToFreeWorld={() => {
+          sfx.playFanfare();
+          setWorldMode('free');
           resetSimulation();
           setActiveScreen('simulation');
         }}
@@ -1129,23 +1135,6 @@ export default function App() {
             >
               <Zap className="w-4 h-4 text-yellow-300 fill-yellow-300" />
               <span className="hidden sm:inline">📖 Historia Rara</span>
-            </button>
-
-            <button
-              onClick={() => {
-                sfx.playLaser(1400);
-                setWorldMode('free');
-                setActiveScreen('simulation');
-              }}
-              className={`px-3 py-2 border-2 font-black text-xs uppercase flex items-center gap-1.5 shadow-[2px_2px_0px_#000] transition-all cursor-pointer ${
-                worldMode === 'free'
-                  ? 'bg-yellow-400 text-black border-yellow-200 ring-2 ring-yellow-400'
-                  : 'bg-gradient-to-r from-emerald-400 to-teal-500 text-black border-black hover:brightness-110'
-              }`}
-              title="Abrir Mundo Libre: Parque de Diversiones"
-            >
-              <Sparkles className="w-4 h-4" />
-              <span className="hidden sm:inline">🎡 Parque Libre</span>
             </button>
           </div>
           <div>

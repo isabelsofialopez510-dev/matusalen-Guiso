@@ -23,7 +23,7 @@ import bgGarden from '../assets/images/elmore_garden_bg_1787237438721.jpg';
 import { sfx } from '../utils/audioEffects';
 
 interface WorldSelectorProps {
-  onSelectWorld: (world: 'world1' | 'world2' | 'world3' | 'world4' | 'free') => void;
+  onSelectWorld: (world: 'world1' | 'world2' | 'world3' | 'world4') => void;
   onGoHome: () => void;
   onOpenStory?: () => void;
   userProfile: { name: string; age: string; grade: string } | null;
@@ -60,7 +60,7 @@ export const WorldSelector: React.FC<WorldSelectorProps> = ({
     setIsMuted(next);
   };
 
-  const handleSelect = (world: 'world1' | 'world2' | 'world3' | 'world4' | 'free') => {
+  const handleSelect = (world: 'world1' | 'world2' | 'world3' | 'world4') => {
     sfx.playSparkle();
     onSelectWorld(world);
   };
@@ -152,28 +152,6 @@ export const WorldSelector: React.FC<WorldSelectorProps> = ({
         '🌿 Tonalidades de Verde: Esmeralda, Menta, Bosque, Lima, Jade y Salvia',
       ],
       tagline: 'Calcula la parábola 2D y acierta a la diana en el exuberante jardín verde.',
-    },
-    {
-      id: 'free' as const,
-      num: '★',
-      title: 'Mundo Libre: Parque de Diversiones',
-      subtitle: 'Montañas Rusas, Rueda de la Fortuna, Carros Chocones & Cañones',
-      badge: '🎡 MUNDO LIBRE • PARQUE DE DIVERSIONES & CARNAVAL',
-      bgImg: bgSpace,
-      accentBorder: 'border-yellow-400',
-      accentBg: 'bg-yellow-400',
-      accentText: 'text-yellow-300',
-      glowColor: 'shadow-[8px_8px_0px_#facc15]',
-      hoverGlow: 'hover:shadow-[14px_14px_0px_#fbbf24]',
-      btnBg: 'bg-gradient-to-r from-yellow-400 via-amber-400 to-pink-500 text-black hover:from-yellow-300 hover:to-amber-300',
-      icon: Sparkles,
-      features: [
-        '🎡 Rueda de la fortuna giratoria con velocidad angular controlable y cabinas',
-        '🎢 Montañas rusas con rieles de aceleración boost, trampolines y loopings 2D',
-        '🏎️ Zona de carros chocones eléctricos hiperelásticos (e = 1.15) con chispas',
-        '🎪 Cañón de feria para disparar a dianas, globos de helio y aros de fuego',
-      ],
-      tagline: 'Construye y experimenta con atracciones mecánicas y física de carnaval.',
     },
   ];
 
@@ -287,49 +265,28 @@ export const WorldSelector: React.FC<WorldSelectorProps> = ({
             <Zap className="w-4 h-4 fill-black" />
           </div>
           <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-white drop-shadow-[4px_4px_0px_#000]">
-            SIMULADORES Y MUNDOS DE FÍSICA
+            ELIGE TU SIMULADOR DE FÍSICA
           </h2>
           <p className="text-sm font-mono text-amber-200 max-w-2xl mx-auto font-medium">
-            Selecciona un simulador para experimentar con cinemática y leyes físicas, o explora la historia y el parque libre:
+            Selecciona cualquiera de los 4 mundos interactivos para experimentar con relatividad, cinemática 1D/2D, caída libre y tiro parabólico.
           </p>
 
-          {/* Featured Combined Button for Historia & Mundo Libre */}
-          <div className="pt-3 max-w-2xl mx-auto">
-            <div className="bg-[#1e0a38] border-3 border-amber-400 p-3 sm:p-4 rounded-2xl shadow-[6px_6px_0px_#000] flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="text-center sm:text-left">
-                <div className="flex items-center justify-center sm:justify-start gap-1.5 text-yellow-300 text-xs font-black">
-                  <Zap className="w-4 h-4 fill-yellow-300" />
-                  <span>MODOS ESPECIALES DISPONIBLES</span>
-                </div>
-                <p className="text-[11px] font-mono text-pink-200 font-bold">
-                  Historia Rara Cuántica y Parque de Diversiones Mecánico
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                {onOpenStory && (
-                  <button
-                    onClick={() => {
-                      sfx.playWarpWhoosh();
-                      onOpenStory();
-                    }}
-                    className="px-3.5 py-2 bg-gradient-to-r from-pink-500 to-purple-600 border-2 border-black text-white font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_#000] hover:brightness-110 cursor-pointer flex items-center gap-1.5 transition-all"
-                  >
-                    <Zap className="w-3.5 h-3.5 fill-yellow-300 text-yellow-300" />
-                    <span>📖 Historia</span>
-                  </button>
-                )}
-
-                <button
-                  onClick={() => handleSelect('free')}
-                  className="px-3.5 py-2 bg-gradient-to-r from-amber-400 to-yellow-300 border-2 border-black text-black font-black text-xs uppercase rounded-xl shadow-[3px_3px_0px_#000] hover:brightness-110 cursor-pointer flex items-center gap-1.5 transition-all"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>🎡 Parque Libre</span>
-                </button>
-              </div>
+          {onOpenStory && (
+            <div className="pt-2">
+              <button
+                onClick={() => {
+                  sfx.playWarpWhoosh();
+                  onOpenStory();
+                }}
+                className="px-5 py-2.5 bg-gradient-to-r from-amber-400 via-pink-500 to-purple-600 border-3 border-black text-white font-black text-xs sm:text-sm uppercase rounded-2xl shadow-[4px_4px_0px_#000] hover:brightness-110 hover:-translate-y-0.5 transition-all cursor-pointer inline-flex items-center gap-2"
+                title="Abrir el Cuento Narrativo y Visual de Física"
+              >
+                <Zap className="w-4 h-4 text-yellow-300 fill-yellow-300 animate-pulse" />
+                <span>📖 ABRIR CUENTO DE FÍSICA CUÁNTICA</span>
+                <Sparkles className="w-4 h-4 text-yellow-300" />
+              </button>
             </div>
-          </div>
+          )}
         </div>
 
         {/* 4 Worlds Grid */}

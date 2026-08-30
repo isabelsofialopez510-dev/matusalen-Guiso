@@ -141,7 +141,7 @@ export const World5FreeSandbox: React.FC<World5FreeSandboxProps> = ({
   const [globalRestitution, setGlobalRestitution] = useState<number>(0.88); // 0 to 1.5
   const [enableMutualGravity, setEnableMutualGravity] = useState<boolean>(false);
   const [carnivalLights, setCarnivalLights] = useState<boolean>(true);
-  const [bgChoice, setBgChoice] = useState<'fair_night' | 'carnival_day' | 'space_park' | 'garden_fair'>('fair_night');
+  const [bgChoice, setBgChoice] = useState<'blank_canvas' | 'fair_night' | 'carnival_day' | 'space_park' | 'garden_fair'>('blank_canvas');
 
   // --- Active Tool & Selected Entity ---
   const [activeTool, setActiveTool] = useState<ParkToolMode>('cannon');
@@ -151,7 +151,7 @@ export const World5FreeSandbox: React.FC<World5FreeSandboxProps> = ({
 
   // --- Ferris Wheel Attraction Mechanical State ---
   const [ferrisWheelSpeed, setFerrisWheelSpeed] = useState<number>(0.6); // rad/s
-  const [ferrisWheelActive, setFerrisWheelActive] = useState<boolean>(true);
+  const [ferrisWheelActive, setFerrisWheelActive] = useState<boolean>(false);
 
   // --- Bodies, Tracks, Particles State ---
   const [bodies, setBodies] = useState<PhysicsBody[]>([]);
@@ -442,8 +442,21 @@ export const World5FreeSandbox: React.FC<World5FreeSandboxProps> = ({
       setTracks([]);
       collisionCountRef.current = 0;
       setCollisionCount(0);
+      setParkScore(0);
 
-      if (presetName === 'roller_coaster') {
+      if (presetName === 'blank') {
+        // --- 0. Lienzo en Blanco / Sandbox Limpio ---
+        setGravity(9.81);
+        setAirDensity(0.05);
+        setWindSpeed(0);
+        setGlobalRestitution(0.85);
+        setEnableMutualGravity(false);
+        setBgChoice('blank_canvas');
+        setTracks([]);
+        setBodies([]);
+        setParticles([]);
+        setFerrisWheelActive(false);
+      } else if (presetName === 'roller_coaster') {
         // --- 1. Mega Montaña Rusa Looping & Drops ---
         setGravity(9.81);
         setAirDensity(0.08);
@@ -584,9 +597,9 @@ export const World5FreeSandbox: React.FC<World5FreeSandboxProps> = ({
     [createBody]
   );
 
-  // Load default theme park preset on mount
+  // Load blank clean canvas on mount
   useEffect(() => {
-    loadPreset('roller_coaster');
+    loadPreset('blank');
   }, [loadPreset]);
 
   // Main Physics Step (Verlet / Sub-stepping with theme park mechanics)
@@ -1106,18 +1119,13 @@ export const World5FreeSandbox: React.FC<World5FreeSandboxProps> = ({
           <button
             onClick={() => {
               sfx.playWhoosh();
-              setBodies([]);
-              setTracks([]);
-              setParticles([]);
-              collisionCountRef.current = 0;
-              setCollisionCount(0);
-              setParkScore(0);
+              loadPreset('blank');
             }}
-            className="px-3.5 py-2.5 bg-pink-600 hover:bg-pink-500 text-white rounded-2xl border-3 border-black font-black text-xs uppercase flex items-center gap-1.5 shadow-[3px_3px_0px_#000] cursor-pointer transition-all"
-            title="Limpiar parque completo"
+            className="px-3.5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-2xl border-3 border-black font-black text-xs uppercase flex items-center gap-1.5 shadow-[3px_3px_0px_#000] cursor-pointer transition-all"
+            title="Limpiar lienzo y dejar en blanco"
           >
             <Trash2 className="w-4 h-4" />
-            <span>Limpiar</span>
+            <span>Dejar en Blanco</span>
           </button>
 
           <div className="flex items-center bg-[#1e073d] border-2 border-yellow-400/80 rounded-2xl p-1 shadow-[2px_2px_0px_#000]">
@@ -1219,10 +1227,11 @@ export const World5FreeSandbox: React.FC<World5FreeSandboxProps> = ({
         {/* Quick Theme Park Presets */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-xs font-black text-yellow-300 uppercase font-mono mr-1 flex items-center gap-1">
-            <Sparkles className="w-3.5 h-3.5 text-yellow-400" /> Atracciones:
+            <Sparkles className="w-3.5 h-3.5 text-yellow-400" /> Modos & Presets:
           </span>
 
           {[
+            { id: 'blank', label: '📄 Lienzo en Blanco' },
             { id: 'roller_coaster', label: '🎢 Montaña Rusa' },
             { id: 'bumper_cars', label: '🏎️ Carros Chocones' },
             { id: 'circus_cannon', label: '🎪 Cañón de Circo' },
@@ -1232,7 +1241,11 @@ export const World5FreeSandbox: React.FC<World5FreeSandboxProps> = ({
             <button
               key={p.id}
               onClick={() => loadPreset(p.id)}
-              className="px-2.5 py-1 rounded-xl font-mono text-[11px] font-bold shadow-[2px_2px_0px_#000] transition-all cursor-pointer border-2 bg-[#0d0321] hover:bg-yellow-400 hover:text-black border-pink-500/50 hover:border-black text-slate-200"
+              className={`px-2.5 py-1 rounded-xl font-mono text-[11px] font-bold shadow-[2px_2px_0px_#000] transition-all cursor-pointer border-2 ${
+                (p.id === 'blank' && bgChoice === 'blank_canvas' && bodies.length === 0)
+                  ? 'bg-yellow-400 text-black border-black scale-105 shadow-[3px_3px_0px_#000]'
+                  : 'bg-[#0d0321] hover:bg-yellow-400 hover:text-black border-pink-500/50 hover:border-black text-slate-200'
+              }`}
             >
               {p.label}
             </button>
@@ -1273,8 +1286,28 @@ export const World5FreeSandbox: React.FC<World5FreeSandboxProps> = ({
       </div>
 
       {/* 5. MAIN INTERACTIVE THEME PARK STAGE (SVG 1200 x 680) */}
-      <div className="relative w-full h-[520px] sm:h-[600px] bg-[#070114] border-5 border-black rounded-3xl overflow-hidden shadow-[10px_10px_0px_#000] select-none">
+      <div className={`relative w-full h-[520px] sm:h-[600px] border-5 border-black rounded-3xl overflow-hidden shadow-[10px_10px_0px_#000] select-none ${
+        bgChoice === 'blank_canvas' ? 'bg-white' : 'bg-[#070114]'
+      }`}>
         
+        {/* BLANK CANVAS CLEAN WHITEBOARD BACKGROUND */}
+        {bgChoice === 'blank_canvas' && (
+          <div className="absolute inset-0 w-full h-full pointer-events-none bg-white">
+            {/* Subtle Clean Technical Grid */}
+            <div 
+              className="absolute inset-0 opacity-[0.08]" 
+              style={{
+                backgroundImage: 'linear-gradient(to right, #000 1px, transparent 1px), linear-gradient(to bottom, #000 1px, transparent 1px)',
+                backgroundSize: '24px 24px'
+              }}
+            />
+            {/* Helpful Watermark */}
+            <div className="absolute bottom-4 right-4 pointer-events-none text-slate-400 font-mono text-xs opacity-60 flex items-center gap-1.5">
+              <span>📄 Mundo Libre: Lienzo en Blanco</span>
+            </div>
+          </div>
+        )}
+
         {/* CARNIVAL ATMOSPHERE BACKGROUND LAYER */}
         {bgChoice === 'fair_night' && (
           <div className="absolute inset-0 w-full h-full pointer-events-none bg-gradient-to-b from-[#0b011c] via-[#21023a] to-[#450742] overflow-hidden">
@@ -1344,61 +1377,63 @@ export const World5FreeSandbox: React.FC<World5FreeSandboxProps> = ({
             </radialGradient>
           </defs>
 
-          {/* 1. GIANT THEME PARK FERRIS WHEEL (RUEDA DE LA FORTUNA) */}
-          <g transform={`translate(${FERRIS_CENTER_X}, ${FERRIS_CENTER_Y})`}>
-            {/* Ferris Wheel Support Legs */}
-            <line x1="0" y1="0" x2="-22" y2="34" stroke="#1f2937" strokeWidth="3.5" strokeLinecap="round" />
-            <line x1="0" y1="0" x2="22" y2="34" stroke="#1f2937" strokeWidth="3.5" strokeLinecap="round" />
-            <line x1="0" y1="0" x2="-22" y2="34" stroke="#facc15" strokeWidth="2.2" strokeLinecap="round" />
-            <line x1="0" y1="0" x2="22" y2="34" stroke="#facc15" strokeWidth="2.2" strokeLinecap="round" />
+          {/* 1. GIANT THEME PARK FERRIS WHEEL (RUEDA DE LA FORTUNA) - ONLY WHEN ACTIVE */}
+          {ferrisWheelActive && (
+            <g transform={`translate(${FERRIS_CENTER_X}, ${FERRIS_CENTER_Y})`}>
+              {/* Ferris Wheel Support Legs */}
+              <line x1="0" y1="0" x2="-22" y2="34" stroke="#1f2937" strokeWidth="3.5" strokeLinecap="round" />
+              <line x1="0" y1="0" x2="22" y2="34" stroke="#1f2937" strokeWidth="3.5" strokeLinecap="round" />
+              <line x1="0" y1="0" x2="-22" y2="34" stroke="#facc15" strokeWidth="2.2" strokeLinecap="round" />
+              <line x1="0" y1="0" x2="22" y2="34" stroke="#facc15" strokeWidth="2.2" strokeLinecap="round" />
 
-            {/* Rotating Wheel & Spokes */}
-            <g transform={`rotate(${(ferrisWheelAngleRef.current * 180) / Math.PI})`}>
-              {/* Outer Neon Rings */}
-              <circle cx="0" cy="0" r={FERRIS_RADIUS} fill="none" stroke="#ec4899" strokeWidth="1.8" opacity="0.9" />
-              <circle cx="0" cy="0" r={FERRIS_RADIUS * 0.7} fill="none" stroke="#00e5ff" strokeWidth="1.2" strokeDasharray="3 3" opacity="0.8" />
+              {/* Rotating Wheel & Spokes */}
+              <g transform={`rotate(${(ferrisWheelAngleRef.current * 180) / Math.PI})`}>
+                {/* Outer Neon Rings */}
+                <circle cx="0" cy="0" r={FERRIS_RADIUS} fill="none" stroke="#ec4899" strokeWidth="1.8" opacity="0.9" />
+                <circle cx="0" cy="0" r={FERRIS_RADIUS * 0.7} fill="none" stroke="#00e5ff" strokeWidth="1.2" strokeDasharray="3 3" opacity="0.8" />
 
-              {/* Spokes */}
-              {Array.from({ length: CABIN_COUNT }).map((_, idx) => {
-                const angle = (idx * (2 * Math.PI)) / CABIN_COUNT;
-                const spokeX = Math.cos(angle) * FERRIS_RADIUS;
-                const spokeY = Math.sin(angle) * FERRIS_RADIUS;
-                return (
-                  <g key={`spoke-${idx}`}>
-                    <line x1="0" y1="0" x2={spokeX} y2={spokeY} stroke="#facc15" strokeWidth="1.2" />
-                    <circle cx={spokeX * 0.6} cy={spokeY * 0.6} r="1.0" fill="#ffffff" />
-                  </g>
-                );
-              })}
+                {/* Spokes */}
+                {Array.from({ length: CABIN_COUNT }).map((_, idx) => {
+                  const angle = (idx * (2 * Math.PI)) / CABIN_COUNT;
+                  const spokeX = Math.cos(angle) * FERRIS_RADIUS;
+                  const spokeY = Math.sin(angle) * FERRIS_RADIUS;
+                  return (
+                    <g key={`spoke-${idx}`}>
+                      <line x1="0" y1="0" x2={spokeX} y2={spokeY} stroke="#facc15" strokeWidth="1.2" />
+                      <circle cx={spokeX * 0.6} cy={spokeY * 0.6} r="1.0" fill="#ffffff" />
+                    </g>
+                  );
+                })}
 
-              {/* Cabins (Gondolas) that stay upright with gravity */}
-              {Array.from({ length: CABIN_COUNT }).map((_, idx) => {
-                const angle = (idx * (2 * Math.PI)) / CABIN_COUNT;
-                const cabinX = Math.cos(angle) * FERRIS_RADIUS;
-                const cabinY = Math.sin(angle) * FERRIS_RADIUS;
-                const cabinColors = ['#f43f5e', '#00e5ff', '#fbbf24', '#a855f7', '#34d399', '#f472b6'];
-                const color = cabinColors[idx % cabinColors.length];
+                {/* Cabins (Gondolas) that stay upright with gravity */}
+                {Array.from({ length: CABIN_COUNT }).map((_, idx) => {
+                  const angle = (idx * (2 * Math.PI)) / CABIN_COUNT;
+                  const cabinX = Math.cos(angle) * FERRIS_RADIUS;
+                  const cabinY = Math.sin(angle) * FERRIS_RADIUS;
+                  const cabinColors = ['#f43f5e', '#00e5ff', '#fbbf24', '#a855f7', '#34d399', '#f472b6'];
+                  const color = cabinColors[idx % cabinColors.length];
 
-                return (
-                  <g
-                    key={`cabin-${idx}`}
-                    transform={`translate(${cabinX}, ${cabinY}) rotate(${(-ferrisWheelAngleRef.current * 180) / Math.PI})`}
-                  >
-                    {/* Cabin Body */}
-                    <rect x="-3.2" y="-2" width="6.4" height="4.5" rx="1.5" fill={color} stroke="#141414" strokeWidth="0.8" />
-                    <circle cx="-1.5" cy="0" r="1.0" fill="#ffffff" opacity="0.8" />
-                    <circle cx="1.5" cy="0" r="1.0" fill="#ffffff" opacity="0.8" />
-                    {/* Carnival light on roof */}
-                    <circle cx="0" cy="-2.5" r="0.8" fill="#facc15" className="animate-ping" />
-                  </g>
-                );
-              })}
+                  return (
+                    <g
+                      key={`cabin-${idx}`}
+                      transform={`translate(${cabinX}, ${cabinY}) rotate(${(-ferrisWheelAngleRef.current * 180) / Math.PI})`}
+                    >
+                      {/* Cabin Body */}
+                      <rect x="-3.2" y="-2" width="6.4" height="4.5" rx="1.5" fill={color} stroke="#141414" strokeWidth="0.8" />
+                      <circle cx="-1.5" cy="0" r="1.0" fill="#ffffff" opacity="0.8" />
+                      <circle cx="1.5" cy="0" r="1.0" fill="#ffffff" opacity="0.8" />
+                      {/* Carnival light on roof */}
+                      <circle cx="0" cy="-2.5" r="0.8" fill="#facc15" className="animate-ping" />
+                    </g>
+                  );
+                })}
+              </g>
+
+              {/* Central Axle Gear */}
+              <circle cx="0" cy="0" r="3.2" fill="#141414" stroke="#facc15" strokeWidth="1.2" />
+              <circle cx="0" cy="0" r="1.5" fill="#f43f5e" />
             </g>
-
-            {/* Central Axle Gear */}
-            <circle cx="0" cy="0" r="3.2" fill="#141414" stroke="#facc15" strokeWidth="1.2" />
-            <circle cx="0" cy="0" r="1.5" fill="#f43f5e" />
-          </g>
+          )}
 
           {/* 2. THEME PARK TRACKS (RAILS, TRAMPOLINES & BOOSTERS) */}
           {tracks.map((trk) => {

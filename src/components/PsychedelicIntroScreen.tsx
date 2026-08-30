@@ -1,35 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import {
   Volume2,
   VolumeX,
   Maximize2,
   Minimize2,
   Sparkles,
-  Zap,
-  LayoutGrid,
-  Orbit,
+  BookOpen,
   GraduationCap,
-  Sliders,
-  X,
-  Play,
-  ArrowRight,
-  Shield,
-  HelpCircle,
-  Eye,
-  Flame,
-  Award
+  User,
+  School,
+  Zap,
 } from 'lucide-react';
 import pixelCoverArt from '../assets/images/psychedelic_pixel_cover_1787926979816.jpg';
 import { sfx } from '../utils/audioEffects';
 
 interface PsychedelicIntroScreenProps {
-  onStartStory: () => void;
+  onStartStory?: () => void;
   onOpenWorlds: () => void;
   onOpenSandbox?: () => void;
   onOpenWorldDirect?: (world: 'world1' | 'world2' | 'world3' | 'world4' | 'free') => void;
-  onOpenProfile: () => void;
-  userProfile: { name: string; age: string; grade: string } | null;
+  onOpenProfile?: () => void;
+  userProfile?: { name: string; age: string; grade: string } | null;
   isMuted: boolean;
   onToggleSound: () => void;
 }
@@ -58,20 +50,10 @@ interface LivingEye {
 export const PsychedelicIntroScreen: React.FC<PsychedelicIntroScreenProps> = ({
   onStartStory,
   onOpenWorlds,
-  onOpenSandbox,
-  onOpenWorldDirect,
-  onOpenProfile,
-  userProfile,
   isMuted,
   onToggleSound,
 }) => {
-  const [selectedIdx, setSelectedIdx] = useState<number>(0);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
-  const [showOptionsModal, setShowOptionsModal] = useState<boolean>(false);
-  const [showExtrasModal, setShowExtrasModal] = useState<boolean>(false);
-  const [showStoryAndSandboxModal, setShowStoryAndSandboxModal] = useState<boolean>(false);
-  const [showExitConfirm, setShowExitConfirm] = useState<boolean>(false);
-  const [scanlinesEnabled, setScanlinesEnabled] = useState<boolean>(true);
   const [crtFlicker, setCrtFlicker] = useState<boolean>(false);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -83,93 +65,16 @@ export const PsychedelicIntroScreen: React.FC<PsychedelicIntroScreenProps> = ({
   });
   const shockwavesRef = useRef<Shockwave[]>([]);
 
-  // Menu items: INICIAR opens the physics simulators immediately, followed by Story & Free World together
-  const menuItems = [
-    {
-      id: 'iniciar',
-      label: 'INICIAR SIMULADORES',
-      subtitle: 'Entrar directo al Hub de los 4 Mundos y Laboratorios de Física',
-      icon: LayoutGrid,
-      action: () => {
-        sfx.playLaser(1600);
-        onOpenWorlds();
-      },
-    },
-    {
-      id: 'historia_mundo_libre',
-      label: 'HISTORIA Y MUNDO LIBRE',
-      subtitle: '📖 Historia Rara de la Física + 🎡 Parque de Diversiones Sandbox',
-      icon: Zap,
-      action: () => {
-        sfx.playPop(520);
-        setShowStoryAndSandboxModal(true);
-      },
-    },
-    {
-      id: 'parque',
-      label: 'MUNDO LIBRE (PARQUE)',
-      subtitle: '🎡 Montañas Rusas, Rueda de la Fortuna, Carros Chocones y Cañón',
-      icon: Sparkles,
-      action: () => {
-        sfx.playLaser(1400);
-        if (onOpenSandbox) {
-          onOpenSandbox();
-        } else if (onOpenWorldDirect) {
-          onOpenWorldDirect('free');
-        } else {
-          onOpenWorlds();
-        }
-      },
-    },
-    {
-      id: 'historia',
-      label: 'HISTORIA RARA',
-      subtitle: 'Aventura de física cuántica y cinemática en Elmore (Cap. 1-5)',
-      icon: Eye,
-      action: () => {
-        sfx.playLaser(1500);
-        onStartStory();
-      },
-    },
-    {
-      id: 'opciones',
-      label: 'OPCIONES',
-      subtitle: 'Audio SFX, Pantalla Completa y Filtro CRT',
-      icon: Sliders,
-      action: () => {
-        sfx.playPop(520);
-        setShowOptionsModal(true);
-      },
-    },
-    {
-      id: 'extras',
-      label: 'EXTRAS & PASAPORTE',
-      subtitle: 'Registro de Estudiante, Créditos y Reconocimientos',
-      icon: GraduationCap,
-      action: () => {
-        sfx.playPop(480);
-        setShowExtrasModal(true);
-      },
-    },
-    {
-      id: 'salir',
-      label: 'FULLSCREEN / SALIR',
-      subtitle: 'Alternar Pantalla Completa o Salir',
-      icon: Maximize2,
-      action: () => {
-        sfx.playPop(400);
-        toggleFullscreen();
-      },
-    },
-  ];
+  const handleStart = () => {
+    sfx.playLaser(1600);
+    if (onStartStory) {
+      onStartStory();
+    } else {
+      onOpenWorlds();
+    }
+  };
 
-  // Fullscreen Detection
-  useEffect(() => {
-    const handleFs = () => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener('fullscreenchange', handleFs);
-    return () => document.removeEventListener('fullscreenchange', handleFs);
-  }, []);
-
+  // Fullscreen Handler
   const toggleFullscreen = () => {
     sfx.playLaser(1500);
     if (!document.fullscreenElement) {
@@ -179,22 +84,19 @@ export const PsychedelicIntroScreen: React.FC<PsychedelicIntroScreenProps> = ({
     }
   };
 
-  // Keyboard navigation for authentic arcade feel
+  // Fullscreen Detection
+  useEffect(() => {
+    const handleFs = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handleFs);
+    return () => document.removeEventListener('fullscreenchange', handleFs);
+  }, []);
+
+  // Keyboard navigation for Enter / Space / F / M
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (showOptionsModal || showExtrasModal || showExitConfirm) return;
-
-      if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+      if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        sfx.playPop(420);
-        setSelectedIdx((prev) => (prev + 1) % menuItems.length);
-      } else if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
-        e.preventDefault();
-        sfx.playPop(520);
-        setSelectedIdx((prev) => (prev - 1 + menuItems.length) % menuItems.length);
-      } else if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        menuItems[selectedIdx].action();
+        handleStart();
       } else if (e.key === 'f' || e.key === 'F') {
         toggleFullscreen();
       } else if (e.key === 'm' || e.key === 'M') {
@@ -204,16 +106,16 @@ export const PsychedelicIntroScreen: React.FC<PsychedelicIntroScreenProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedIdx, showOptionsModal, showExtrasModal, showExitConfirm, menuItems]);
+  }, [onStartStory, onOpenWorlds, onToggleSound]);
 
-  // Periodic Glitch / CRT flicker
+  // Periodic subtle CRT flicker
   useEffect(() => {
     const interval = setInterval(() => {
-      if (Math.random() > 0.6) {
+      if (Math.random() > 0.65) {
         setCrtFlicker(true);
-        setTimeout(() => setCrtFlicker(false), 90 + Math.random() * 120);
+        setTimeout(() => setCrtFlicker(false), 90 + Math.random() * 100);
       }
-    }, 4000);
+    }, 4500);
     return () => clearInterval(interval);
   }, []);
 
@@ -271,21 +173,15 @@ export const PsychedelicIntroScreen: React.FC<PsychedelicIntroScreenProps> = ({
     };
     window.addEventListener('resize', handleResize);
 
-    // Living Reactive Mystical Eyes mapping to the entity
+    // Living Reactive Mystical Eyes mapping to the background entity
     const livingEyes: LivingEye[] = [
-      // Big chest third eye
       { xPct: 0.46, yPct: 0.61, radius: 24, irisColor: '#9333ea', pupilColor: '#000000', glowColor: '#e879f9', blinkTimer: 200, blinkDuration: 0, isBlinking: false },
-      // Face Left Eye
       { xPct: 0.44, yPct: 0.42, radius: 14, irisColor: '#06b6d4', pupilColor: '#000000', glowColor: '#67e8f9', blinkTimer: 240, blinkDuration: 0, isBlinking: false },
-      // Face Right Eye
       { xPct: 0.58, yPct: 0.43, radius: 14, irisColor: '#ec4899', pupilColor: '#000000', glowColor: '#f472b6', blinkTimer: 260, blinkDuration: 0, isBlinking: false },
-      // Left shoulder eyes
       { xPct: 0.28, yPct: 0.40, radius: 9, irisColor: '#ef4444', pupilColor: '#000000', glowColor: '#f87171', blinkTimer: 180, blinkDuration: 0, isBlinking: false },
       { xPct: 0.33, yPct: 0.41, radius: 9, irisColor: '#f59e0b', pupilColor: '#000000', glowColor: '#fbbf24', blinkTimer: 290, blinkDuration: 0, isBlinking: false },
-      // Right arm eyes
       { xPct: 0.79, yPct: 0.69, radius: 10, irisColor: '#3b82f6', pupilColor: '#000000', glowColor: '#60a5fa', blinkTimer: 220, blinkDuration: 0, isBlinking: false },
       { xPct: 0.80, yPct: 0.74, radius: 10, irisColor: '#06b6d4', pupilColor: '#000000', glowColor: '#22d3ee', blinkTimer: 310, blinkDuration: 0, isBlinking: false },
-      // Hip eyes
       { xPct: 0.19, yPct: 0.79, radius: 10, irisColor: '#dc2626', pupilColor: '#000000', glowColor: '#f87171', blinkTimer: 270, blinkDuration: 0, isBlinking: false },
       { xPct: 0.12, yPct: 0.85, radius: 10, irisColor: '#ea580c', pupilColor: '#000000', glowColor: '#fb923c', blinkTimer: 330, blinkDuration: 0, isBlinking: false },
     ];
@@ -445,7 +341,7 @@ export const PsychedelicIntroScreen: React.FC<PsychedelicIntroScreenProps> = ({
       id="psychedelic-intro-root"
       onPointerMove={handlePointerMove}
       onClick={handleStageClick}
-      className={`relative w-full h-screen min-h-screen bg-[#070014] text-white flex flex-col items-center justify-between p-2 sm:p-4 select-none overflow-hidden font-pixel ${
+      className={`relative w-full h-screen min-h-screen bg-[#070014] text-white flex flex-col items-center justify-between p-3 sm:p-6 select-none overflow-hidden font-pixel ${
         crtFlicker ? 'brightness-125 contrast-125' : ''
       }`}
     >
@@ -460,8 +356,8 @@ export const PsychedelicIntroScreen: React.FC<PsychedelicIntroScreenProps> = ({
             imageRendering: 'pixelated',
           }}
         />
-        {/* Color Grading Vignette */}
-        <div className="absolute inset-0 pointer-events-none bg-radial from-transparent via-[#140026]/30 to-[#070014]/80 mix-blend-multiply" />
+        {/* Color Grading Vignette for Readability */}
+        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/85 via-transparent to-black/90 mix-blend-multiply" />
       </div>
 
       {/* INTERACTIVE ANIMATED PARTICLES & LIVING EYES CANVAS OVERLAY */}
@@ -471,509 +367,142 @@ export const PsychedelicIntroScreen: React.FC<PsychedelicIntroScreenProps> = ({
       />
 
       {/* RETRO CRT SCANLINES OVERLAY */}
-      {scanlinesEnabled && (
-        <div className="fixed inset-0 pointer-events-none z-20 opacity-30 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(0,0,0,0.9)_3px,rgba(0,0,0,0.9)_4px)]" />
-      )}
+      <div className="fixed inset-0 pointer-events-none z-20 opacity-25 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(0,0,0,0.9)_3px,rgba(0,0,0,0.9)_4px)]" />
 
-      {/* TOP FLOATING NAVIGATION BAR */}
-      <header className="relative z-30 w-full max-w-6xl mx-auto flex items-center justify-between gap-2 p-2 sm:p-3 bg-black/75 border-2 sm:border-3 border-yellow-400 rounded-2xl backdrop-blur-md shadow-[4px_4px_0px_#000]">
-        {/* Title Tag */}
-        <div className="flex items-center gap-2">
-          <span className="text-yellow-300 text-[10px] sm:text-xs tracking-widest pixel-text-yellow animate-pulse">
-            ★ ESQUIZOFRENIA • PORTAL ARCADE ★
-          </span>
-        </div>
-
-        {/* Action Toggles */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          {/* Fullscreen Button */}
+      {/* TOP SECTION: ESQUIZOFRENIA TITLE */}
+      <header className="relative z-30 w-full max-w-4xl mx-auto flex flex-col items-center justify-center pt-2 sm:pt-4 text-center">
+        {/* Controls (Sound & Fullscreen) pinned neatly in top right */}
+        <div className="absolute top-2 right-2 sm:top-3 sm:right-3 flex items-center gap-2">
           <button
             onClick={(e) => {
               e.stopPropagation();
               toggleFullscreen();
             }}
-            className={`px-2.5 py-1 rounded-xl border-2 font-pixel text-[9px] sm:text-[10px] uppercase flex items-center gap-1.5 transition-all cursor-pointer shadow-[2px_2px_0px_#000] ${
+            className={`p-2 sm:px-3 sm:py-1.5 rounded-xl border-2 font-pixel text-[9px] sm:text-[10px] uppercase flex items-center gap-1.5 transition-all cursor-pointer shadow-[3px_3px_0px_#000] ${
               isFullscreen
                 ? 'bg-amber-400 text-black border-black hover:bg-yellow-300'
-                : 'bg-slate-900 text-amber-200 border-amber-400 hover:bg-slate-800'
+                : 'bg-black/75 text-amber-200 border-yellow-400 hover:bg-slate-900'
             }`}
             title="Pantalla Completa (Tecla F)"
           >
-            {isFullscreen ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
-            <span className="hidden sm:inline">{isFullscreen ? 'SALIR' : 'FULLSCREEN'}</span>
+            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+            <span className="hidden md:inline">{isFullscreen ? 'SALIR' : 'FULLSCREEN'}</span>
           </button>
 
-          {/* Sound Button */}
           <button
             onClick={(e) => {
               e.stopPropagation();
               onToggleSound();
             }}
-            className={`px-2.5 py-1 rounded-xl border-2 font-pixel text-[9px] sm:text-[10px] uppercase flex items-center gap-1.5 transition-all cursor-pointer shadow-[2px_2px_0px_#000] ${
+            className={`p-2 sm:px-3 sm:py-1.5 rounded-xl border-2 font-pixel text-[9px] sm:text-[10px] uppercase flex items-center gap-1.5 transition-all cursor-pointer shadow-[3px_3px_0px_#000] ${
               isMuted
                 ? 'bg-red-600 text-white border-black hover:bg-red-500'
                 : 'bg-emerald-400 text-black border-black hover:bg-emerald-300'
             }`}
             title="Sonido SFX (Tecla M)"
           >
-            {isMuted ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3 animate-pulse" />}
-            <span className="hidden sm:inline">{isMuted ? 'MUDO' : 'SFX'}</span>
+            {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5 animate-pulse" />}
+            <span className="hidden md:inline">{isMuted ? 'MUDO' : 'AUDIO SFX'}</span>
           </button>
         </div>
+
+        {/* Big Stylized "ESQUIZOFRENIA" Title */}
+        <motion.div
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.6 }}
+          className="space-y-1 sm:space-y-2 mt-2 sm:mt-0"
+        >
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-yellow-400 border-2 border-black rounded-full text-black font-black text-[9px] sm:text-[11px] uppercase shadow-[3px_3px_0px_#000] tracking-wider">
+            <Zap className="w-3.5 h-3.5 fill-black" />
+            <span>PORTAL ARCADE DE FÍSICA MULTIVERSAL</span>
+            <Zap className="w-3.5 h-3.5 fill-black" />
+          </div>
+
+          <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-400 to-cyan-300 drop-shadow-[0_0_25px_rgba(236,72,153,0.85)] filter pixel-text-shadow">
+            ESQUIZOFRENIA
+          </h1>
+        </motion.div>
       </header>
 
-      {/* MAIN RETRO INTERACTIVE PIXEL MENU ON THE LEFT (MATCHING EXACT SCREENSHOT) */}
-      <div className="relative z-30 w-full max-w-6xl mx-auto my-auto flex flex-col md:flex-row items-center justify-between gap-6 px-3 sm:px-6">
-        
-        {/* LEFT SIDE: AUTHENTIC PIXEL-ART VERTICAL MENU */}
-        <nav
-          className="flex flex-col items-start space-y-3 sm:space-y-4 text-left p-4 sm:p-6 bg-black/60 md:bg-transparent rounded-3xl md:rounded-none border-2 border-yellow-400/80 md:border-none backdrop-blur-sm md:backdrop-blur-none shadow-[6px_6px_0px_#000] md:shadow-none"
-          role="menu"
-          aria-label="Menú Principal"
+      {/* CENTER AREA: ONLY THE INGRESS / ENTRY BUTTON FOR THE STORY */}
+      <main className="relative z-30 my-auto flex flex-col items-center justify-center p-4">
+        <motion.div
+          initial={{ scale: 0.85, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+          className="flex flex-col items-center gap-3"
         >
-          {menuItems.map((item, idx) => {
-            const isSelected = selectedIdx === idx;
-            return (
-              <button
-                key={item.id}
-                id={`pixel-menu-item-${item.id}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  item.action();
-                }}
-                onMouseEnter={() => {
-                  if (selectedIdx !== idx) {
-                    sfx.playPop(450);
-                    setSelectedIdx(idx);
-                  }
-                }}
-                className={`group relative flex items-center gap-2.5 sm:gap-3 text-left transition-all duration-150 cursor-pointer focus:outline-none ${
-                  isSelected ? 'scale-110 translate-x-2' : 'hover:translate-x-1 opacity-90 hover:opacity-100'
-                }`}
-              >
-                {/* Yellow Arrow Cursor Indicator */}
-                <span
-                  className={`text-base sm:text-xl md:text-2xl font-black text-yellow-300 pixel-text-yellow transition-opacity duration-150 ${
-                    isSelected ? 'opacity-100 animate-pulse' : 'opacity-0'
-                  }`}
-                >
-                  &gt;
+          <button
+            id="btn-ingreso-historia"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleStart();
+            }}
+            className="group relative px-8 sm:px-14 py-4 sm:py-6 bg-gradient-to-r from-yellow-400 via-amber-400 to-pink-500 hover:from-yellow-300 hover:via-amber-300 hover:to-pink-400 border-4 border-black rounded-3xl text-black font-black text-xl sm:text-3xl md:text-4xl uppercase tracking-widest shadow-[8px_8px_0px_#000] hover:shadow-[12px_12px_0px_#FF007F] hover:-translate-y-1 active:translate-y-1 active:shadow-[4px_4px_0px_#000] transition-all cursor-pointer flex items-center justify-center gap-3 sm:gap-4 animate-bounce"
+            title="Iniciar la Historia de Física Cuántica"
+          >
+            <BookOpen className="w-6 h-6 sm:w-9 sm:h-9 text-black group-hover:scale-110 transition-transform" />
+            <span className="drop-shadow-[1px_1px_0px_#fff]">INICIAR HISTORIA</span>
+            <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-black animate-spin" />
+          </button>
+
+          <span className="text-[10px] sm:text-xs font-silkscreen text-amber-200 pixel-text-shadow tracking-wider bg-black/60 px-3 py-1 rounded-lg border border-yellow-400/40">
+            [ Presiona ENTER o ESPACIO para comenzar ]
+          </span>
+        </motion.div>
+      </main>
+
+      {/* BOTTOM SECTION: CREDITS (AUTORA, DOCENTE, INSTITUCIÓN EDUCATIVA) */}
+      <footer className="relative z-30 w-full max-w-4xl mx-auto pb-2 sm:pb-3">
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className="bg-black/85 border-3 border-yellow-400 rounded-2xl sm:rounded-3xl p-3 sm:p-4 backdrop-blur-md shadow-[6px_6px_0px_#000] text-center"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-3 items-center divide-y md:divide-y-0 md:divide-x divide-yellow-400/30">
+            {/* 1. Autora */}
+            <div className="flex items-center justify-center gap-2 py-1 md:py-0 px-2 text-center">
+              <User className="w-4 h-4 text-pink-400 shrink-0" />
+              <div className="flex flex-col">
+                <span className="text-[9px] font-silkscreen text-pink-300 font-bold uppercase tracking-wider">
+                  AUTORA
                 </span>
-
-                {/* Menu Option Label */}
-                <div className="flex flex-col">
-                  <span
-                    className={`text-lg sm:text-2xl md:text-3xl font-black uppercase tracking-wider transition-colors duration-150 pixel-text-shadow ${
-                      isSelected
-                        ? 'text-yellow-300 pixel-text-yellow drop-shadow-[0_0_12px_rgba(250,204,21,0.9)]'
-                        : 'text-white hover:text-yellow-200'
-                    }`}
-                  >
-                    {item.label}
-                  </span>
-                  
-                  {/* Subtle Context Subtitle on Hover/Select */}
-                  <span
-                    className={`text-[9px] sm:text-[10px] font-silkscreen text-pink-300 font-bold transition-all duration-200 ${
-                      isSelected ? 'opacity-100 max-h-6 mt-0.5' : 'opacity-0 max-h-0 overflow-hidden'
-                    }`}
-                  >
-                    {item.subtitle}
-                  </span>
-                </div>
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* RIGHT SIDE: QUICK SHORTCUT CARD (ONLY ON WIDER SCREENS) */}
-        <div className="hidden lg:flex flex-col items-end space-y-3 pointer-events-auto">
-          <div className="bg-black/80 border-3 border-yellow-400 p-4 rounded-2xl shadow-[6px_6px_0px_#000] text-right max-w-xs backdrop-blur-md">
-            <div className="flex items-center justify-end gap-2 text-yellow-300 text-xs font-bold mb-1">
-              <Zap className="w-4 h-4 text-yellow-300 fill-yellow-300" />
-              <span className="pixel-text-shadow">ACCESO RÁPIDO</span>
+                <span className="text-xs sm:text-sm font-black text-white pixel-text-shadow">
+                  Isabel Sofía López Guisado
+                </span>
+              </div>
             </div>
-            <p className="text-[10px] font-silkscreen text-slate-200 leading-relaxed mb-3">
-              4 Mundos de Física • Parque Libre • Historia Narrada
-            </p>
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  sfx.playLaser(1600);
-                  onOpenWorlds();
-                }}
-                className="w-full py-2.5 bg-gradient-to-r from-yellow-400 to-amber-500 border-2 border-black text-black font-black text-[11px] uppercase rounded-xl shadow-[3px_3px_0px_#000] hover:brightness-110 cursor-pointer flex items-center justify-center gap-2"
-              >
-                <LayoutGrid className="w-4 h-4" />
-                <span>🎮 SIMULADORES (4 MUNDOS)</span>
-              </button>
 
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  sfx.playPop(520);
-                  setShowStoryAndSandboxModal(true);
-                }}
-                className="w-full py-2.5 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-400 border-2 border-black text-white font-black text-[11px] uppercase rounded-xl shadow-[3px_3px_0px_#000] hover:brightness-110 cursor-pointer flex items-center justify-center gap-2"
-              >
-                <Zap className="w-4 h-4 text-yellow-300 fill-yellow-300" />
-                <span>📖 HISTORIA & PARQUE 🎡</span>
-              </button>
+            {/* 2. Docente */}
+            <div className="flex items-center justify-center gap-2 py-1 md:py-0 px-2 text-center">
+              <GraduationCap className="w-4 h-4 text-yellow-300 shrink-0" />
+              <div className="flex flex-col">
+                <span className="text-[9px] font-silkscreen text-yellow-300 font-bold uppercase tracking-wider">
+                  DOCENTE
+                </span>
+                <span className="text-xs sm:text-sm font-black text-white pixel-text-shadow">
+                  Jorge Armando Jaramillo
+                </span>
+              </div>
+            </div>
+
+            {/* 3. Institución Educativa */}
+            <div className="flex items-center justify-center gap-2 py-1 md:py-0 px-2 text-center">
+              <School className="w-4 h-4 text-cyan-300 shrink-0" />
+              <div className="flex flex-col">
+                <span className="text-[9px] font-silkscreen text-cyan-300 font-bold uppercase tracking-wider">
+                  INSTITUCIÓN EDUCATIVA
+                </span>
+                <span className="text-xs sm:text-sm font-black text-white pixel-text-shadow">
+                  Institución Educativa Josefa Campos
+                </span>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* BOTTOM FOOTER: BLINKING "PRESIONA START" & SOCIAL WATERMARK */}
-      <footer className="relative z-30 w-full max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 p-2 sm:p-3 text-center">
-        {/* Left Credit Info */}
-        <div className="text-[8px] sm:text-[9px] font-silkscreen text-amber-200/90 pixel-text-shadow text-left hidden sm:block">
-          <span>I.E. JOSEFA CAMPOS</span> • <span className="text-pink-300">FÍSICA MULTIVERSAL</span>
-        </div>
-
-        {/* Central Action Buttons: START (SIMULADORES) & HISTORIA + MUNDO LIBRE */}
-        <div className="flex flex-wrap items-center justify-center gap-2.5">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              sfx.playLaser(1600);
-              onOpenWorlds();
-            }}
-            className="group px-4 py-2.5 bg-gradient-to-r from-yellow-400 to-amber-400 hover:from-yellow-300 hover:to-amber-300 border-2 border-black rounded-2xl text-black font-pixel text-xs sm:text-sm tracking-wider uppercase shadow-[4px_4px_0px_#000] animate-bounce cursor-pointer transition-all flex items-center gap-2"
-            title="Abrir directamente los Simuladores"
-          >
-            <Play className="w-4 h-4 fill-black" />
-            <span>PRESIONA START (SIMULADORES)</span>
-          </button>
-
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              sfx.playPop(520);
-              setShowStoryAndSandboxModal(true);
-            }}
-            className="px-3.5 py-2 bg-[#1b0336]/90 hover:bg-[#2c0556] border-2 border-pink-400 hover:border-pink-300 text-pink-200 hover:text-white rounded-2xl font-pixel text-[10px] sm:text-xs uppercase shadow-[3px_3px_0px_#000] cursor-pointer transition-all flex items-center gap-1.5"
-            title="Abrir Historia y Parque de Diversiones"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
-            <span>HISTORIA & MUNDO LIBRE 🎡</span>
-          </button>
-        </div>
-
-        {/* Right Watermark @ria.star23 */}
-        <div className="flex items-center gap-1.5 text-xs sm:text-sm font-silkscreen text-yellow-200 pixel-text-shadow">
-          <span className="opacity-90">♪ @ria.star23</span>
-        </div>
+        </motion.div>
       </footer>
-
-      {/* COMBINED STORY & FREE WORLD (PARQUE) MODAL */}
-      <AnimatePresence>
-        {showStoryAndSandboxModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="relative w-full max-w-xl bg-[#16032d] border-4 border-yellow-400 rounded-3xl p-6 sm:p-7 shadow-[10px_10px_0px_#FF007F] text-white font-pixel"
-            >
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowStoryAndSandboxModal(false);
-                }}
-                className="absolute top-4 right-4 w-8 h-8 bg-yellow-400 border-2 border-black text-black font-black rounded-xl flex items-center justify-center hover:bg-pink-500 hover:text-white transition-all cursor-pointer"
-              >
-                <X className="w-4 h-4 stroke-[3]" />
-              </button>
-
-              <div className="text-center space-y-1 mb-5">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-yellow-400 border border-black rounded-full text-black font-black text-[9px] uppercase shadow-[2px_2px_0px_#000]">
-                  <Sparkles className="w-3 h-3 fill-black" />
-                  <span>MODOS COMPLEMENTARIOS</span>
-                </div>
-                <h3 className="text-base sm:text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-400 to-cyan-400 uppercase pixel-text-shadow pt-1">
-                  HISTORIA Y MUNDO LIBRE
-                </h3>
-                <p className="text-[10px] font-silkscreen text-amber-200">
-                  Elige tu experiencia: vive la historia interactiva o experimenta en el parque mecánico libre.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Option 1: Historia Rara */}
-                <div className="bg-[#240645] border-3 border-pink-400 p-4 rounded-2xl flex flex-col justify-between space-y-3 shadow-[4px_4px_0px_#000] hover:border-yellow-400 transition-all group">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2 text-pink-300 text-xs font-black">
-                      <Zap className="w-4 h-4 text-yellow-300 fill-yellow-300" />
-                      <span>📖 HISTORIA RARA</span>
-                    </div>
-                    <p className="text-[9px] font-silkscreen text-slate-200 leading-relaxed">
-                      5 Capítulos ilustrados con diálogos de Gumball, Darwin y Anais, retos con XP y gizmos matemáticos.
-                    </p>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowStoryAndSandboxModal(false);
-                      sfx.playLaser(1600);
-                      onStartStory();
-                    }}
-                    className="w-full py-2.5 bg-gradient-to-r from-pink-500 to-purple-600 border-2 border-black text-white font-black text-[10px] uppercase rounded-xl shadow-[3px_3px_0px_#000] hover:brightness-110 cursor-pointer flex items-center justify-center gap-1.5"
-                  >
-                    <span>ENTRAR A LA HISTORIA</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                {/* Option 2: Mundo Libre (Parque) */}
-                <div className="bg-[#0c1f38] border-3 border-cyan-400 p-4 rounded-2xl flex flex-col justify-between space-y-3 shadow-[4px_4px_0px_#000] hover:border-yellow-400 transition-all group">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2 text-cyan-300 text-xs font-black">
-                      <Sparkles className="w-4 h-4 text-yellow-300" />
-                      <span>🎡 MUNDO LIBRE (PARQUE)</span>
-                    </div>
-                    <p className="text-[9px] font-silkscreen text-slate-200 leading-relaxed">
-                      Rueda de la fortuna giratoria, montañas rusas con loopings y boosts, carros chocones y cañón de feria.
-                    </p>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowStoryAndSandboxModal(false);
-                      sfx.playLaser(1400);
-                      if (onOpenSandbox) {
-                        onOpenSandbox();
-                      } else if (onOpenWorldDirect) {
-                        onOpenWorldDirect('free');
-                      } else {
-                        onOpenWorlds();
-                      }
-                    }}
-                    className="w-full py-2.5 bg-gradient-to-r from-amber-400 to-yellow-300 border-2 border-black text-black font-black text-[10px] uppercase rounded-xl shadow-[3px_3px_0px_#000] hover:brightness-110 cursor-pointer flex items-center justify-center gap-1.5"
-                  >
-                    <span>ENTRAR AL PARQUE</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-5 pt-3 border-t border-purple-900/60 flex items-center justify-between text-[9px] font-silkscreen text-slate-400">
-                <span>I.E. Josefa Campos</span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowStoryAndSandboxModal(false);
-                    onOpenWorlds();
-                  }}
-                  className="text-yellow-300 hover:underline cursor-pointer"
-                >
-                  O ir al Hub de 4 Mundos &gt;
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* OPTIONS MODAL */}
-      <AnimatePresence>
-        {showOptionsModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="relative w-full max-w-md bg-[#16032d] border-4 border-yellow-400 rounded-3xl p-6 shadow-[10px_10px_0px_#000] text-white font-pixel"
-            >
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowOptionsModal(false);
-                }}
-                className="absolute top-4 right-4 w-8 h-8 bg-yellow-400 border-2 border-black text-black font-black rounded-xl flex items-center justify-center hover:bg-pink-500 hover:text-white transition-all cursor-pointer"
-              >
-                <X className="w-4 h-4 stroke-[3]" />
-              </button>
-
-              <h3 className="text-sm sm:text-base font-black text-yellow-300 uppercase mb-4 flex items-center gap-2 pixel-text-yellow">
-                <Sliders className="w-4 h-4 text-yellow-300" />
-                <span>OPCIONES DEL SISTEMA</span>
-              </h3>
-
-              <div className="space-y-3 text-[10px]">
-                {/* Audio SFX */}
-                <div className="bg-black/70 p-3 rounded-2xl border-2 border-purple-800 flex items-center justify-between">
-                  <div>
-                    <span className="font-black text-xs block text-white">SONIDO SFX</span>
-                    <span className="text-slate-400 text-[8px] font-silkscreen">Sintetizador Web Audio</span>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleSound();
-                    }}
-                    className={`px-3 py-1.5 rounded-xl font-black border-2 border-black cursor-pointer shadow-[2px_2px_0px_#000] text-[9px] ${
-                      isMuted ? 'bg-red-500 text-white' : 'bg-emerald-400 text-black'
-                    }`}
-                  >
-                    {isMuted ? 'MUDO' : 'ACTIVO'}
-                  </button>
-                </div>
-
-                {/* Fullscreen */}
-                <div className="bg-black/70 p-3 rounded-2xl border-2 border-purple-800 flex items-center justify-between">
-                  <div>
-                    <span className="font-black text-xs block text-white">FULLSCREEN</span>
-                    <span className="text-slate-400 text-[8px] font-silkscreen">Pantalla Completa (F)</span>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleFullscreen();
-                    }}
-                    className={`px-3 py-1.5 rounded-xl font-black border-2 border-black cursor-pointer shadow-[2px_2px_0px_#000] text-[9px] ${
-                      isFullscreen ? 'bg-amber-400 text-black' : 'bg-cyan-400 text-black'
-                    }`}
-                  >
-                    {isFullscreen ? 'SALIR' : 'ACTIVAR'}
-                  </button>
-                </div>
-
-                {/* Scanlines Filter */}
-                <div className="bg-black/70 p-3 rounded-2xl border-2 border-purple-800 flex items-center justify-between">
-                  <div>
-                    <span className="font-black text-xs block text-white">FILTRO CRT</span>
-                    <span className="text-slate-400 text-[8px] font-silkscreen">Líneas de escaneo retro</span>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      sfx.playPop();
-                      setScanlinesEnabled(!scanlinesEnabled);
-                    }}
-                    className={`px-3 py-1.5 rounded-xl font-black border-2 border-black cursor-pointer shadow-[2px_2px_0px_#000] text-[9px] ${
-                      scanlinesEnabled ? 'bg-yellow-400 text-black' : 'bg-slate-700 text-white'
-                    }`}
-                  >
-                    {scanlinesEnabled ? 'ON' : 'OFF'}
-                  </button>
-                </div>
-
-                {/* Controls Info */}
-                <div className="bg-black/70 p-3 rounded-2xl border-2 border-purple-800 space-y-1 font-silkscreen text-[9px] text-amber-200">
-                  <span className="font-black text-[10px] block text-cyan-300 font-pixel">🎮 CONTROLES:</span>
-                  <p>• <strong>↑ / ↓ o W / S:</strong> Mover cursor</p>
-                  <p>• <strong>ENTER / ESPACIO:</strong> Seleccionar</p>
-                  <p>• <strong>F:</strong> Pantalla Completa</p>
-                  <p>• <strong>M:</strong> Mute SFX</p>
-                </div>
-              </div>
-
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowOptionsModal(false);
-                }}
-                className="mt-4 w-full py-2.5 bg-yellow-400 border-3 border-black text-black font-black uppercase rounded-2xl shadow-[3px_3px_0px_#000] hover:bg-yellow-300 cursor-pointer text-xs"
-              >
-                VOLVER
-              </button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* EXTRAS MODAL (CREDITS, PASSPORT, SANDBOX) */}
-      <AnimatePresence>
-        {showExtrasModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="relative w-full max-w-lg bg-[#16032d] border-4 border-pink-500 rounded-3xl p-6 sm:p-7 shadow-[10px_10px_0px_#000] text-white font-pixel"
-            >
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowExtrasModal(false);
-                }}
-                className="absolute top-4 right-4 w-8 h-8 bg-pink-500 border-2 border-black text-white font-black rounded-xl flex items-center justify-center hover:bg-yellow-400 hover:text-black transition-all cursor-pointer"
-              >
-                <X className="w-4 h-4 stroke-[3]" />
-              </button>
-
-              <div className="text-center space-y-1 mb-4">
-                <span className="text-[9px] px-2.5 py-0.5 bg-yellow-400 border border-black rounded-full text-black font-black uppercase">
-                  CONTENIDO EXTRA Y ACADÉMICO
-                </span>
-                <h3 className="text-sm sm:text-base font-black text-pink-300 uppercase pixel-text-shadow">
-                  I.E. JOSEFA CAMPOS
-                </h3>
-              </div>
-
-              <div className="space-y-2.5 text-[9px] font-silkscreen">
-                {/* Authors & Teacher */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div className="bg-black/70 p-3 rounded-2xl border-2 border-yellow-400 text-center">
-                    <span className="text-yellow-300 font-black block uppercase text-[10px] mb-1 font-pixel">✍️ Estudiantes</span>
-                    <p className="text-white font-bold text-xs">Isabel Sofía López</p>
-                    <p className="text-white font-bold text-xs">& Juan Alejandro Mejía</p>
-                  </div>
-
-                  <div className="bg-black/70 p-3 rounded-2xl border-2 border-cyan-400 text-center">
-                    <span className="text-cyan-300 font-black block uppercase text-[10px] mb-1 font-pixel">👨‍🏫 Docente</span>
-                    <p className="text-white font-bold text-xs">Jorge Armando Jaramillo Bravo</p>
-                    <p className="text-slate-400 text-[8px]">Física & Ciencias Naturales</p>
-                  </div>
-                </div>
-
-                {/* Fast Launchers from Extras */}
-                <div className="grid grid-cols-2 gap-2 pt-2">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowExtrasModal(false);
-                      onOpenProfile();
-                    }}
-                    className="p-2.5 bg-gradient-to-br from-fuchsia-600 to-purple-800 border-2 border-black rounded-xl text-white font-pixel text-[9px] uppercase shadow-[3px_3px_0px_#000] hover:brightness-110 flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <GraduationCap className="w-3.5 h-3.5 text-yellow-300" />
-                    <span>PASAPORTE</span>
-                  </button>
-
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowExtrasModal(false);
-                      if (onOpenSandbox) {
-                        onOpenSandbox();
-                      } else {
-                        onOpenWorlds();
-                      }
-                    }}
-                    className="p-2.5 bg-gradient-to-br from-amber-400 via-pink-500 to-purple-600 border-2 border-black rounded-xl text-white font-pixel text-[9px] uppercase shadow-[3px_3px_0px_#000] hover:brightness-110 flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
-                    <span>PARQUE 🎡</span>
-                  </button>
-                </div>
-              </div>
-
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowExtrasModal(false);
-                }}
-                className="mt-4 w-full py-2.5 bg-pink-500 border-3 border-black text-white font-black uppercase rounded-2xl shadow-[3px_3px_0px_#000] hover:bg-pink-400 cursor-pointer text-xs"
-              >
-                CERRAR EXTRAS
-              </button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };
