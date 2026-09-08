@@ -57,7 +57,6 @@ import {
 } from 'lucide-react';
 import { WorldSelector } from './components/WorldSelector';
 import { World4Parabolic } from './components/World4Parabolic';
-import { World5FreeSandbox } from './components/World5FreeSandbox';
 import { AnaisAnnouncement } from './components/AnaisAnnouncement';
 import { PixelSlider } from './components/PixelSlider';
 import { PixelGumball, PixelDarwin, PixelAnais, PixelPenny, PixelTrioBanner } from './components/PixelCharacters';
@@ -140,7 +139,7 @@ export default function App() {
   };
 
   // --- Simulation State ---
-  const [worldMode, setWorldMode] = useState<'world1' | 'world2' | 'world3' | 'world4' | 'free'>('world1'); // World 1 (Relatividad Bus), World 2 (Cubo MUA vs MRU), World 3 (Caída Libre), World 4 (Tiro Parabólico), Free (Sandbox)
+  const [worldMode, setWorldMode] = useState<'world1' | 'world2' | 'world3' | 'world4'>('world1'); // World 1 (Relatividad Bus), World 2 (Cubo MUA vs MRU), World 3 (Caída Libre), World 4 (Tiro Parabólico)
   const [v, setV] = useState<number>(0.80); // Speed of the bus (v/c)
   const [velocityInput, setVelocityInput] = useState<string>('0.80');
   const [viewMode, setViewMode] = useState<'split' | 'bus' | 'ground'>('split');
@@ -696,11 +695,6 @@ export default function App() {
             sfx.playWarpWhoosh();
             setActiveScreen('worlds');
           }}
-          onOpenSandbox={() => {
-            sfx.playWarpWhoosh();
-            setWorldMode('free');
-            setActiveScreen('simulation');
-          }}
           onOpenWorldDirect={(targetWorld) => {
             sfx.playWarpWhoosh();
             setWorldMode(targetWorld);
@@ -863,21 +857,15 @@ export default function App() {
       <WeirdPhysicsStory
         onGoHome={() => setActiveScreen('home')}
         onOpenWorld={(world) => {
-          if (world === 'world5' || world === 'free') {
-            setWorldMode('free');
-          } else {
-            setWorldMode(world);
-          }
+          setWorldMode(world);
           if (world === 'world1' || world === 'world2') setProjectileType('ball');
           if (world === 'world3') setProjectileType('cube');
           resetSimulation();
           setActiveScreen('simulation');
         }}
-        onFinishStoryToFreeWorld={() => {
+        onFinishStory={() => {
           sfx.playFanfare();
-          setWorldMode('free');
-          resetSimulation();
-          setActiveScreen('simulation');
+          setActiveScreen('worlds');
         }}
         userProfile={userProfile}
         isMuted={isMuted}
@@ -886,7 +874,7 @@ export default function App() {
     );
   }
 
-  // --- WORLDS SELECTION SCREEN (HUB DE LOS 4 MUNDOS + MUNDO LIBRE) ---
+  // --- WORLDS SELECTION SCREEN (HUB DE LOS 4 MUNDOS) ---
   if (activeScreen === 'worlds') {
     return (
       <>
@@ -1151,9 +1139,7 @@ export default function App() {
                     ? 'Mundo 2: Pista Horizontal MUA vs MRU con Anais'
                     : worldMode === 'world3'
                       ? 'Mundo 3: Caída Libre & Resistencia al Aire con Darwin'
-                      : worldMode === 'world4'
-                        ? 'Mundo 4: Tiro Parabólico 2D Balístico (Jardín Verde)'
-                        : 'Mundo Libre: Parque de Diversiones & Carnaval Mecánico'}
+                      : 'Mundo 4: Tiro Parabólico 2D Balístico (Jardín Verde)'}
               </h1>
               <span className={`px-2 py-0.5 text-[10px] font-black uppercase border-2 ${
                 worldMode === 'world1'
@@ -1162,11 +1148,9 @@ export default function App() {
                     ? 'bg-pink-500 text-white border-pink-300 shadow-[0_0_10px_rgba(244,114,182,0.6)]'
                     : worldMode === 'world3'
                       ? 'bg-orange-500 text-white border-orange-300 shadow-[0_0_10px_rgba(251,146,60,0.6)]'
-                      : worldMode === 'world4'
-                        ? 'bg-emerald-400 text-black border-emerald-300 shadow-[0_0_10px_rgba(52,211,153,0.6)]'
-                        : 'bg-yellow-400 text-black border-yellow-300 shadow-[0_0_10px_rgba(250,204,21,0.6)]'
+                      : 'bg-emerald-400 text-black border-emerald-300 shadow-[0_0_10px_rgba(52,211,153,0.6)]'
               }`}>
-                {worldMode === 'world1' ? 'Mundo 1 • Azul' : worldMode === 'world2' ? 'Mundo 2 • Rosado' : worldMode === 'world3' ? 'Mundo 3 • Naranja' : worldMode === 'world4' ? 'Mundo 4 • Verde' : '🎡 Parque de Diversiones'}
+                {worldMode === 'world1' ? 'Mundo 1 • Azul' : worldMode === 'world2' ? 'Mundo 2 • Rosado' : worldMode === 'world3' ? 'Mundo 3 • Naranja' : 'Mundo 4 • Verde'}
               </span>
             </div>
 
@@ -1180,16 +1164,14 @@ export default function App() {
                 <span className="text-amber-300 font-extrabold">({userProfile.age} • {userProfile.grade})</span>
               </div>
             )}
-            <p className={`text-xs font-mono font-semibold ${worldMode === 'world1' ? 'text-sky-200' : worldMode === 'world2' ? 'text-pink-200' : worldMode === 'world3' ? 'text-orange-200' : worldMode === 'world4' ? 'text-emerald-200' : 'text-yellow-200'}`}>
+            <p className={`text-xs font-mono font-semibold ${worldMode === 'world1' ? 'text-sky-200' : worldMode === 'world2' ? 'text-pink-200' : worldMode === 'world3' ? 'text-orange-200' : 'text-emerald-200'}`}>
               {worldMode === 'world1'
                 ? '🌍 Mundo 1: Perspectivas Simultáneas — Marco S\' (Interior 1D) vs Marco S (Exterior 2D) con Gumball'
                 : worldMode === 'world2'
                   ? '🧱 Mundo 2: Pista Horizontal — Comparativa de MUA (a = cte) vs MRU (v = cte) con Anais'
                   : worldMode === 'world3'
                     ? '🪨 Mundo 3: Caída Libre con Resistencia de Aire — Análisis MUA y Velocidad Terminal MRU con Darwin'
-                    : worldMode === 'world4'
-                      ? '🎯 Mundo 4: Tiro Parabólico Balístico con v₀ = 28 m/s, θ = 16.3°, alcance X = 43 m y H_max = 3.3 m'
-                      : '🎡 Mundo Libre: Parque de Diversiones — Montañas Rusas con Loopings, Rueda de la Fortuna, Carros Chocones y Cañones'}
+                    : '🎯 Mundo 4: Tiro Parabólico Balístico con v₀ = 28 m/s, θ = 16.3°, alcance X = 43 m y H_max = 3.3 m'}
             </p>
           </div>
         </div>
@@ -1280,17 +1262,6 @@ export default function App() {
               <Target className="w-3 h-3" />
               <span>M4 Verde</span>
             </button>
-            <button
-              onClick={() => { sfx.playPop(); setWorldMode('free'); resetSimulation(); }}
-              className={`px-2.5 py-1 text-[11px] font-black uppercase transition-all flex items-center gap-1 cursor-pointer ${
-                worldMode === 'free'
-                  ? 'bg-cyan-400 text-black font-black shadow-[0_0_12px_#06b6d4]'
-                  : 'bg-slate-900/80 text-cyan-200/70 hover:text-white hover:bg-cyan-950'
-              }`}
-            >
-              <Sparkles className="w-3 h-3 text-yellow-300" />
-              <span>Libre</span>
-            </button>
           </div>
 
           <button
@@ -1302,9 +1273,7 @@ export default function App() {
                   ? 'bg-pink-500 hover:bg-pink-400 text-white border-pink-300 shadow-[0_0_10px_rgba(244,114,182,0.5)]'
                   : worldMode === 'world3'
                     ? 'bg-orange-500 hover:bg-orange-400 text-white border-orange-300 shadow-[0_0_10px_rgba(251,146,60,0.5)]'
-                    : worldMode === 'world4'
-                      ? 'bg-emerald-500 hover:bg-emerald-400 text-black font-black border-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.5)]'
-                      : 'bg-cyan-400 hover:bg-cyan-300 text-black font-black border-cyan-200 shadow-[0_0_12px_rgba(6,182,212,0.5)]'
+                    : 'bg-emerald-500 hover:bg-emerald-400 text-black font-black border-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.5)]'
             }`}
           >
             {isPlaying ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current" />}
@@ -1320,9 +1289,7 @@ export default function App() {
                   ? 'bg-[#350722] hover:bg-[#4a0a30] text-pink-200 border-pink-400'
                   : worldMode === 'world3'
                     ? 'bg-[#3b1206] hover:bg-[#4f1808] text-orange-200 border-orange-400'
-                    : worldMode === 'world4'
-                      ? 'bg-[#064e3b] hover:bg-[#065f46] text-emerald-200 border-emerald-400'
-                      : 'bg-[#1e293b] hover:bg-slate-700 text-purple-200 border-[#a855f7]'
+                    : 'bg-[#064e3b] hover:bg-[#065f46] text-emerald-200 border-emerald-400'
             }`}
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -1467,19 +1434,6 @@ export default function App() {
                   <Target className="w-3.5 h-3.5 text-emerald-300" />
                   <span className="text-[8.5px]">Mundo 4</span>
                   <span className="text-[7px] font-mono opacity-90">Verde • Parábola</span>
-                </button>
-
-                <button
-                  onClick={() => { setWorldMode('free'); resetSimulation(); }}
-                  className={`col-span-2 py-1.5 px-2 border-2 text-xs font-black uppercase transition-all flex items-center justify-center gap-1.5 rounded ${
-                    worldMode === 'free'
-                      ? 'bg-cyan-400 text-[#0b0e1b] border-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.6)]'
-                      : 'bg-slate-900/80 text-cyan-300 border-cyan-900 hover:border-cyan-400'
-                  }`}
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-spin" style={{ animationDuration: '6s' }} />
-                  <span className="text-[9.5px]">Mundo Libre (Sandbox)</span>
-                  <span className="text-[7.5px] font-mono bg-cyan-950 text-cyan-200 px-1 rounded border border-cyan-800">0g / Grav.</span>
                 </button>
               </div>
             </div>
@@ -2010,41 +1964,6 @@ export default function App() {
               </div>
             )}
 
-            {/* WORLD 5: MUNDO LIBRE / SANDBOX CONTROLS */}
-            {worldMode === 'free' && (
-              <div className="p-5 space-y-4 bg-[#071322]">
-                <div className="flex items-center justify-between border-b border-cyan-500/30 pb-2">
-                  <span className="text-xs font-black uppercase text-cyan-300 flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-yellow-300" />
-                    Mundo Libre: Sandbox
-                  </span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 bg-cyan-400 text-[#0b0e1b] font-black rounded">
-                    Mundo Libre
-                  </span>
-                </div>
-
-                <div className="p-3 bg-[#030a13] border border-cyan-500/40 rounded space-y-2 text-xs font-mono text-cyan-200">
-                  <p className="text-[11px] leading-relaxed">
-                    ¡Laboratorio de física abierta sin restricciones! Experimenta con gravedad cero, gravitación N-cuerpos tipo planetas, resortes, dibujo de rampas y ondas de choque sónicas.
-                  </p>
-                  <div className="p-2 bg-[#02050b] rounded text-[10px] space-y-1 text-slate-300">
-                    <div className="flex justify-between">
-                      <span className="text-cyan-300 font-bold">1. Herramientas:</span>
-                      <span>Spawneo, Slingshot, Rampas</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-amber-300 font-bold">2. Entornos:</span>
-                      <span>Espacio, Luna, Tierra, Júpiter</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-pink-300 font-bold">3. Energía:</span>
-                      <span>Conservación E_k + E_p = Cte</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Display Visual Toggles */}
             <div className={`p-5 space-y-2 ${
               worldMode === 'world1'
@@ -2053,9 +1972,7 @@ export default function App() {
                   ? 'bg-[#29071c]'
                   : worldMode === 'world3'
                     ? 'bg-[#2d0f05]'
-                    : worldMode === 'world4'
-                      ? 'bg-[#04261a]'
-                      : 'bg-[#131728]'
+                    : 'bg-[#04261a]'
             }`}>
               <label className={`text-[10px] font-black uppercase tracking-widest block ${
                 worldMode === 'world1' ? 'text-[#0f172a]' : 'text-purple-300'
@@ -3362,19 +3279,6 @@ export default function App() {
                 showTrail={showTrail}
               />
             )}
-
-            {/* ========================================================================= */}
-            {/* WORLD 5: MUNDO LIBRE / SANDBOX DE FÍSICA Y EXPERIMENTACIÓN ABIERTA        */}
-            {/* ========================================================================= */}
-            {worldMode === 'free' && (
-              <World5FreeSandbox
-                isPlaying={isPlaying}
-                setIsPlaying={setIsPlaying}
-                showVectors={showVectors}
-                showTrail={showTrail}
-              />
-            )}
-
 
             {/* ========================================================================= */}
             {/* WORLD 1: RELATIVIDAD ESPECIAL EN EL AUTOBÚS                                */}

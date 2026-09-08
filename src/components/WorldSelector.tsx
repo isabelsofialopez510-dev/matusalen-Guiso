@@ -20,6 +20,10 @@ import bgBusStop from '../assets/images/elmore_bus_stop_1787235581594.jpg';
 import bgSpace from '../assets/images/space_world_bg_1785850978031.jpg';
 import bgHouse from '../assets/images/suburban_house_bg_1785850447893.jpg';
 import bgGarden from '../assets/images/elmore_garden_bg_1787237438721.jpg';
+import catEarthArt from '../assets/images/cat_earth_psychedelic_1788903563596.jpg';
+import rocketCatArt from '../assets/images/rocket_cat_orbit_1788903993600.jpg';
+import gumballSkyArt from '../assets/images/gumball_pixel_freefall_1788906121950.jpg';
+import darwinRocketArt from '../assets/images/darwin_rocket_space_1788906436591.jpg';
 import { sfx } from '../utils/audioEffects';
 
 interface WorldSelectorProps {
@@ -39,6 +43,7 @@ export const WorldSelector: React.FC<WorldSelectorProps> = ({
 }) => {
   const [isMuted, setIsMuted] = useState<boolean>(() => sfx.getMuted());
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [bannerArt, setBannerArt] = useState<'cat' | 'rocketCat' | 'gumballSky' | 'darwinRocket'>('darwinRocket');
 
   useEffect(() => {
     const handleFs = () => setIsFullscreen(!!document.fullscreenElement);
@@ -270,23 +275,166 @@ export const WorldSelector: React.FC<WorldSelectorProps> = ({
           <p className="text-sm font-mono text-amber-200 max-w-2xl mx-auto font-medium">
             Selecciona cualquiera de los 4 mundos interactivos para experimentar con relatividad, cinemática 1D/2D, caída libre y tiro parabólico.
           </p>
+        </div>
 
-          {onOpenStory && (
-            <div className="pt-2">
+        {/* Featured Creative Cosmic Portal Showcase */}
+        <div className="relative bg-gradient-to-r from-[#170933] via-[#220d47] to-[#120726] border-4 border-amber-400 rounded-3xl p-4 sm:p-6 shadow-[8px_8px_0px_#FF007F] flex flex-col md:flex-row items-center gap-6 overflow-hidden">
+          {/* Cosmic Glow Background Accent */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-pink-500/15 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-400/15 rounded-full blur-3xl pointer-events-none" />
+
+          {/* Left: Pixel Art Artwork Frame */}
+          <div className="w-full md:w-52 lg:w-60 flex-shrink-0 flex flex-col items-center">
+            {/* Quick artwork switcher */}
+            <div className="flex flex-wrap items-center justify-center gap-1 bg-black/80 p-1 rounded-xl border border-yellow-400/60 mb-2 text-[10px]">
               <button
                 onClick={() => {
-                  sfx.playWarpWhoosh();
-                  onOpenStory();
+                  sfx.playPop();
+                  setBannerArt('darwinRocket');
                 }}
-                className="px-5 py-2.5 bg-gradient-to-r from-amber-400 via-pink-500 to-purple-600 border-3 border-black text-white font-black text-xs sm:text-sm uppercase rounded-2xl shadow-[4px_4px_0px_#000] hover:brightness-110 hover:-translate-y-0.5 transition-all cursor-pointer inline-flex items-center gap-2"
-                title="Abrir el Cuento Narrativo y Visual de Física"
+                className={`px-2 py-0.5 rounded-lg font-black transition-all cursor-pointer flex items-center gap-1 ${
+                  bannerArt === 'darwinRocket'
+                    ? 'bg-orange-500 text-white shadow-[1px_1px_0px_#000]'
+                    : 'text-orange-200/70 hover:text-white'
+                }`}
               >
-                <Zap className="w-4 h-4 text-yellow-300 fill-yellow-300 animate-pulse" />
-                <span>📖 ABRIR CUENTO DE FÍSICA CUÁNTICA</span>
-                <Sparkles className="w-4 h-4 text-yellow-300" />
+                <span>🪐 Darwin</span>
+              </button>
+              <button
+                onClick={() => {
+                  sfx.playPop();
+                  setBannerArt('gumballSky');
+                }}
+                className={`px-2 py-0.5 rounded-lg font-black transition-all cursor-pointer flex items-center gap-1 ${
+                  bannerArt === 'gumballSky'
+                    ? 'bg-sky-400 text-black shadow-[1px_1px_0px_#000]'
+                    : 'text-sky-200/70 hover:text-white'
+                }`}
+              >
+                <span>☁️ Gumball</span>
+              </button>
+              <button
+                onClick={() => {
+                  sfx.playPop();
+                  setBannerArt('rocketCat');
+                }}
+                className={`px-2 py-0.5 rounded-lg font-black transition-all cursor-pointer flex items-center gap-1 ${
+                  bannerArt === 'rocketCat'
+                    ? 'bg-rose-500 text-white shadow-[1px_1px_0px_#000]'
+                    : 'text-rose-200/70 hover:text-white'
+                }`}
+              >
+                <span>🚀 Cohete</span>
+              </button>
+              <button
+                onClick={() => {
+                  sfx.playPop();
+                  setBannerArt('cat');
+                }}
+                className={`px-2 py-0.5 rounded-lg font-black transition-all cursor-pointer flex items-center gap-1 ${
+                  bannerArt === 'cat'
+                    ? 'bg-amber-400 text-black shadow-[1px_1px_0px_#000]'
+                    : 'text-amber-200/70 hover:text-white'
+                }`}
+              >
+                <span>🐱 Tierra</span>
               </button>
             </div>
-          )}
+
+            <div className="relative w-44 sm:w-48 md:w-full aspect-[9/14] bg-black border-4 border-black rounded-2xl overflow-hidden shadow-[5px_5px_0px_#000] group">
+              <img
+                src={
+                  bannerArt === 'darwinRocket'
+                    ? darwinRocketArt
+                    : bannerArt === 'gumballSky'
+                    ? gumballSkyArt
+                    : bannerArt === 'rocketCat'
+                    ? rocketCatArt
+                    : catEarthArt
+                }
+                alt={
+                  bannerArt === 'darwinRocket'
+                    ? 'Darwin en Cohete Balístico sobre la Tierra'
+                    : bannerArt === 'gumballSky'
+                    ? 'Gumball en Caída Libre en el Cielo'
+                    : bannerArt === 'rocketCat'
+                    ? 'Gato Cohete en Órbita MUA'
+                    : 'Gato Cósmico sobre la Tierra - Pixel Art'
+                }
+                referrerPolicy="no-referrer"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                style={{
+                  imageRendering:
+                    bannerArt === 'cat' ||
+                    bannerArt === 'gumballSky' ||
+                    bannerArt === 'darwinRocket'
+                      ? 'pixelated'
+                      : 'auto',
+                }}
+              />
+              <div className="absolute top-2 left-2 bg-black/80 px-2 py-0.5 rounded-lg border border-yellow-400 text-[10px] font-black text-yellow-300 shadow">
+                {bannerArt === 'darwinRocket'
+                  ? '🚀 DARWIN EN ÓRBITA'
+                  : bannerArt === 'gumballSky'
+                  ? '☁️ GUMBALL CAÍDA LIBRE'
+                  : bannerArt === 'rocketCat'
+                  ? '🚀 GATO COHETE MUA'
+                  : '🐱 GATO CÓSMICO'}
+              </div>
+              <div className="absolute bottom-2 right-2 bg-pink-600/90 text-white font-black text-[9px] px-2 py-0.5 rounded border border-white">
+                {bannerArt === 'darwinRocket'
+                  ? 'TIRO PARABÓLICO'
+                  : bannerArt === 'gumballSky'
+                  ? 'GALILEO 8-BIT'
+                  : bannerArt === 'rocketCat'
+                  ? 'PROPULSIÓN ORBITAL'
+                  : 'FÍSICA 8-BIT'}
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Creative Lore & Navigation */}
+          <div className="flex-1 space-y-3 text-left">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-yellow-400 border-2 border-black rounded-xl text-black font-black text-xs uppercase shadow-[2px_2px_0px_#000]">
+              <Sparkles className="w-3.5 h-3.5 fill-black" />
+              <span>GUARDIÁN DEL VÓRTICE CÓSMICO</span>
+            </div>
+
+            <h3 className="text-xl sm:text-2xl lg:text-3xl font-black uppercase text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-400 to-cyan-300 drop-shadow-[2px_2px_0px_#000]">
+              "La gravedad atrae a todos los cuerpos... ¡incluso a los gatos cósmicos!"
+            </h3>
+
+            <p className="text-xs sm:text-sm font-mono text-slate-200 leading-relaxed">
+              En el multiverso de Elmore, las leyes de la física clásica y la relatividad se entrelazan. Explora los <strong>4 Mundos Didácticos</strong> para experimentar con la dilatación temporal de Einstein, carreras cinemáticas MUA vs MRU, el experimento galileano de caída libre y lanzamientos balísticos 2D.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              {onOpenStory && (
+                <button
+                  onClick={() => {
+                    sfx.playWarpWhoosh();
+                    onOpenStory();
+                  }}
+                  className="px-5 py-2.5 bg-gradient-to-r from-amber-400 via-pink-500 to-purple-600 border-3 border-black text-white font-black text-xs sm:text-sm uppercase rounded-2xl shadow-[4px_4px_0px_#000] hover:brightness-110 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer inline-flex items-center gap-2"
+                  title="Abrir el Cuento Narrativo y Visual de Física"
+                >
+                  <Zap className="w-4 h-4 text-yellow-300 fill-yellow-300 animate-pulse" />
+                  <span>📖 ABRIR HISTORIA DE FÍSICA</span>
+                  <Sparkles className="w-4 h-4 text-yellow-300" />
+                </button>
+              )}
+
+              <button
+                onClick={() => handleSelect('world1')}
+                className="px-4 py-2.5 bg-sky-500 hover:bg-sky-400 border-3 border-black text-white font-black text-xs sm:text-sm uppercase rounded-2xl shadow-[3px_3px_0px_#000] hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer flex items-center gap-1.5"
+                title="Ir al Mundo 1"
+              >
+                <Globe className="w-4 h-4 text-yellow-300" />
+                <span>IR AL MUNDO 1 (AUTOBÚS)</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* 4 Worlds Grid */}

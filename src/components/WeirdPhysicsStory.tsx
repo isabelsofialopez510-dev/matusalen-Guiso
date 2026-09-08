@@ -29,9 +29,13 @@ import {
   Share2,
   Layers,
   Activity,
-  Orbit,
+  Rocket,
 } from 'lucide-react';
 import pixelCoverArt from '../assets/images/psychedelic_pixel_cover_1787926979816.jpg';
+import catEarthArt from '../assets/images/cat_earth_psychedelic_1788903563596.jpg';
+import rocketCatArt from '../assets/images/rocket_cat_orbit_1788903993600.jpg';
+import gumballSkyArt from '../assets/images/gumball_pixel_freefall_1788906121950.jpg';
+import darwinRocketArt from '../assets/images/darwin_rocket_space_1788906436591.jpg';
 import { PixelGumball, PixelDarwin, PixelAnais, PixelPenny } from './PixelCharacters';
 import { sfx } from '../utils/audioEffects';
 
@@ -149,6 +153,7 @@ const STORY_CHAPTERS: StoryChapter[] = [
     storyNarrative: [
       'Al alba, sobre una pista rosada de cristal cuántico, Anais retó a su hermano a una carrera legendaria. Anais encendió su bólido con velocidad constante (MRU), marchando serena y perfecta.',
       'Gumball, desesperado por ganar, pisó a fondo un propulsor de aceleración constante (MUA). Al inicio parecía rezagado, pero la ecuación cuadrática del tiempo comenzó a multiplicar su velocidad de forma implacable.',
+      'En la órbita baja, el intrépido Gato Cohete de Elmore encendió sus reactores de plasma sobre la atmósfera terrestre: un experimento colosal donde la propulsión constante (a = cte) desafía la gravedad y demuestra cómo la velocidad acumulada v = v₀ + a·t curva el espacio-tiempo.',
       'El Guardián del Vórtice susurró desde el éter: "La aceleración dobla la distancia recorrida con el cuadrado del tiempo, pero si te acercas a la luz, el tiempo mismo empezará a frenar tu reloj frente al cosmos..."',
     ],
     topic: 'MRU, MUA y Factor γ de Lorentz',
@@ -221,7 +226,8 @@ const STORY_CHAPTERS: StoryChapter[] = [
     storyNarrative: [
       'Cuenta la leyenda que el sabio Galileo subió a lo alto de la torre para desafiar dos mil años de dogmas aristotélicos. Sostenía en una mano una pluma ligera y en la otra una pesada esfera de hierro fundido.',
       'Al soltarlas en la atmósfera terrestre, el aire abrazó la pluma y la hizo danzar lentamente, mientras la bola de hierro se estrellaba veloz. Pero el Guardián del Vórtice abrió una grieta de vacío absoluto.',
-      'Al desaparecer el aire, el milagro se reveló: la pluma ingrávida y la esfera cayeron hombro a hombro, rozando el suelo en el mismo instante matemático, pues la gravedad no discrimina por masa.',
+      '¡En ese cielo límpido, Gumball se lanzó en paracaídas invisible flotando feliz entre las nubes pixeladas, haciendo la señal de la paz mientras el vacío cósmico demostraba que la gravedad acelera a todos por igual!',
+      'Al desaparecer el aire, el milagro se reveló: la pluma ingrávida, la esfera y el gato cósmico cayeron al unísono, rozando el suelo en el mismo instante matemático, pues la gravedad g = 9.8 m/s² no discrimina por masa.',
     ],
     topic: 'Caída Libre y Resistencia Aerodinámica',
     character: 'Darwin, Galileo & Newton',
@@ -293,10 +299,11 @@ const STORY_CHAPTERS: StoryChapter[] = [
     storyNarrative: [
       'Al cruzar las puertas del jardín verde de Elmore, los viajeros se toparon con el gran Cañón Balístico del Guardián. En la lejanía, sobre una colina de piedra, reposaba la campana del triunfo.',
       'Gumball intentó disparar a 10 grados, pero el proyectil chocó contra el pasto muy pronto. Luego disparó a 80 grados, y la esfera subió hasta las nubes para caer casi sobre su propia cabeza.',
+      '¡Pero Darwin, intrépido y radiante con su bocadillo DARWIN ♡, montó un cohete propulsor naranja a 45° y despegó hacia la órbita terrestre! Su parábola cósmica surcó el espacio estrellado sobre el planeta Tierra, alcanzando la máxima distancia horizontal.',
       'Fue entonces cuando la voz cósmica resonó: "La naturaleza adora el equilibrio. El ángulo de 45 grados reparte la energía a partes iguales entre el vuelo en altura y la conquista del horizonte".',
     ],
     topic: 'Tiro Parabólico 2D y Alcance Balístico',
-    character: 'Gumball, Anais & El Cañón',
+    character: 'Darwin en Cohete, Gumball & Anais',
     icon: '🎯',
     themeColor: 'from-emerald-500 to-teal-600',
     accentColor: '#10b981',
@@ -361,8 +368,8 @@ const STORY_CHAPTERS: StoryChapter[] = [
 
 interface WeirdPhysicsStoryProps {
   onGoHome: () => void;
-  onOpenWorld: (world: 'world1' | 'world2' | 'world3' | 'world4' | 'free') => void;
-  onFinishStoryToFreeWorld?: () => void;
+  onOpenWorld: (world: 'world1' | 'world2' | 'world3' | 'world4') => void;
+  onFinishStory?: () => void;
   userProfile: { name: string; age: string; grade: string } | null;
   isMuted: boolean;
   onToggleSound: () => void;
@@ -371,7 +378,7 @@ interface WeirdPhysicsStoryProps {
 export const WeirdPhysicsStory: React.FC<WeirdPhysicsStoryProps> = ({
   onGoHome,
   onOpenWorld,
-  onFinishStoryToFreeWorld,
+  onFinishStory,
   userProfile,
   isMuted,
   onToggleSound,
@@ -386,6 +393,18 @@ export const WeirdPhysicsStory: React.FC<WeirdPhysicsStoryProps> = ({
   const [activeStoryTab, setActiveStoryTab] = useState<'narrative' | 'dialogue' | 'enigma'>('narrative');
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [showCompleteModal, setShowCompleteModal] = useState<boolean>(false);
+  // Fixed unique artwork permanently locked to each of the 4 chapters
+  const activeArtwork: 'cat' | 'rocketCat' | 'gumballSky' | 'darwinRocket' =
+    currentChapterIdx === 0
+      ? 'cat'
+      : currentChapterIdx === 1
+      ? 'rocketCat'
+      : currentChapterIdx === 2
+      ? 'gumballSky'
+      : 'darwinRocket';
+  const [turboActive, setTurboActive] = useState<boolean>(false);
+  const [vacuumMode, setVacuumMode] = useState<boolean>(true);
+  const [darwinAngle, setDarwinAngle] = useState<number>(45);
 
   // Gizmo state variables
   const [gizmoVx, setGizmoVx] = useState<number>(15);
@@ -441,12 +460,12 @@ export const WeirdPhysicsStory: React.FC<WeirdPhysicsStoryProps> = ({
     }
   };
 
-  const handleFinishToFreeWorld = () => {
+  const handleFinishStory = () => {
     sfx.playFanfare();
-    if (onFinishStoryToFreeWorld) {
-      onFinishStoryToFreeWorld();
+    if (onFinishStory) {
+      onFinishStory();
     } else {
-      onOpenWorld('free');
+      onOpenWorld('world1');
     }
   };
 
@@ -475,7 +494,8 @@ export const WeirdPhysicsStory: React.FC<WeirdPhysicsStoryProps> = ({
   const handleNextChapter = () => {
     sfx.playWarpWhoosh();
     if (currentChapterIdx < STORY_CHAPTERS.length - 1) {
-      setCurrentChapterIdx((prev) => prev + 1);
+      const nextIdx = currentChapterIdx + 1;
+      setCurrentChapterIdx(nextIdx);
       setCurrentDialogueIdx(0);
       setSelectedOption(null);
       setAnsweredCorrectly(null);
@@ -633,22 +653,6 @@ export const WeirdPhysicsStory: React.FC<WeirdPhysicsStoryProps> = ({
             <span>PORTADA</span>
           </button>
 
-          <button
-            onClick={() => {
-              sfx.playFanfare();
-              if (onFinishStoryToFreeWorld) {
-                onFinishStoryToFreeWorld();
-              } else {
-                onOpenWorld('free');
-              }
-            }}
-            className="px-3 py-1.5 bg-gradient-to-r from-amber-400 to-pink-500 hover:from-amber-300 hover:to-pink-400 text-black font-black text-xs uppercase rounded-xl border-2 border-black flex items-center gap-1.5 shadow-[2px_2px_0px_#000] transition-all cursor-pointer"
-            title="Ir al Mundo Libre"
-          >
-            <Orbit className="w-3.5 h-3.5" />
-            <span>MUNDO LIBRE 🎡</span>
-          </button>
-
           <div className="flex items-center gap-1.5 bg-black/60 px-3 py-1 rounded-xl border border-yellow-400/50">
             <BookMarked className="w-3.5 h-3.5 text-yellow-300 animate-pulse" />
             <span className="text-xs font-black text-amber-300">CUENTO DE FÍSICA CUÁNTICA</span>
@@ -727,18 +731,28 @@ export const WeirdPhysicsStory: React.FC<WeirdPhysicsStoryProps> = ({
         <div className="lg:col-span-5 flex flex-col bg-[#110526]/95 border-4 border-amber-400 rounded-3xl p-4 sm:p-5 shadow-[8px_8px_0px_#000] backdrop-blur-md relative overflow-hidden">
           
           {/* Header of the Illustration Canvas */}
-          <div className="flex items-center justify-between mb-3 text-xs font-black text-amber-300">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3 text-xs font-black text-amber-300">
             <div className="flex items-center gap-1.5 bg-black/70 px-2.5 py-1 rounded-xl border border-yellow-400/50">
               <Sparkles className="w-3.5 h-3.5 text-yellow-400" />
-              <span>ENTE CÓSMICO • GUARDIÁN DEL VÓRTICE</span>
+              <span>
+                {activeArtwork === 'darwinRocket'
+                  ? '🚀 DARWIN EN ÓRBITA BALÍSTICA (θ = 45°)'
+                  : activeArtwork === 'gumballSky'
+                  ? '☁️ GUMBALL EN CAÍDA LIBRE (g = 9.8 m/s²)'
+                  : activeArtwork === 'rocketCat'
+                  ? '🚀 GATO COHETE EN ÓRBITA MUA'
+                  : '🐱 GATO CÓSMICO DE ELMORE (MRU)'}
+              </span>
             </div>
-            <span className="text-pink-300 font-bold text-[11px] bg-pink-950/60 px-2 py-0.5 rounded-lg border border-pink-500/40">
-              {chapter.topic}
-            </span>
+
+            {/* Fixed Chapter Artwork Indicator (no switcher buttons) */}
+            <div className="flex items-center gap-1.5 bg-black/80 px-2.5 py-1 rounded-xl border border-yellow-400/50 text-[10px] font-mono text-amber-300 font-bold">
+              <span>🖼️ ILUSTRACIÓN CAPÍTULO {chapter.id}</span>
+            </div>
           </div>
 
-          {/* Central Artwork Stage: Unmodified original vertical image + floating physics around it */}
-          <div className="relative w-full aspect-[9/14] sm:aspect-[9/13] max-h-[520px] bg-[#080112] border-3 border-black rounded-2xl overflow-hidden shadow-[4px_4px_0px_#000] flex items-center justify-center">
+          {/* Central Artwork Stage: Original pixel art + floating physics around it */}
+          <div className="relative w-full aspect-[9/14] sm:aspect-[9/13] max-h-[500px] bg-[#080112] border-3 border-black rounded-2xl overflow-hidden shadow-[4px_4px_0px_#000] flex items-center justify-center group">
             
             {/* 1. Canvas overlay for atomic orbits and quantum sparks around the character */}
             <canvas
@@ -746,18 +760,102 @@ export const WeirdPhysicsStory: React.FC<WeirdPhysicsStoryProps> = ({
               className="absolute inset-0 pointer-events-none z-10 w-full h-full"
             />
 
-            {/* 2. THE EXACT UNMODIFIED USER PIXEL ARTWORK */}
+            {/* 2. THE USER PIXEL / ARTWORK (DARWIN ROCKET, GUMBALL SKY, ROCKET CAT, CAT ON EARTH, OR VORTEX) */}
             <img
-              src={pixelCoverArt}
-              alt="Entidad Cósmica Pixel Art Original"
+              src={
+                activeArtwork === 'darwinRocket'
+                  ? darwinRocketArt
+                  : activeArtwork === 'gumballSky'
+                  ? gumballSkyArt
+                  : activeArtwork === 'rocketCat'
+                  ? rocketCatArt
+                  : activeArtwork === 'cat'
+                  ? catEarthArt
+                  : pixelCoverArt
+              }
+              alt={
+                activeArtwork === 'darwinRocket'
+                  ? 'Darwin en Cohete Balístico sobre la Tierra - Pixel Art'
+                  : activeArtwork === 'gumballSky'
+                  ? 'Gumball en Caída Libre en el Cielo - Pixel Art'
+                  : activeArtwork === 'rocketCat'
+                  ? 'Gato Cohete en Órbita Terrestre - Aceleración MUA'
+                  : activeArtwork === 'cat'
+                  ? 'Gato Cósmico sobre la Tierra en el Espacio Psicodélico'
+                  : 'Entidad Cósmica Pixel Art Original'
+              }
               referrerPolicy="no-referrer"
-              className="w-full h-full object-contain object-center z-0 relative"
+              className={`w-full h-full object-contain object-center z-0 relative transition-all duration-300 ${
+                activeArtwork === 'rocketCat' && turboActive
+                  ? 'scale-105 filter drop-shadow-[0_0_15px_rgba(255,100,0,0.8)]'
+                  : activeArtwork === 'gumballSky'
+                  ? 'hover:scale-105 filter drop-shadow-[0_0_15px_rgba(56,189,248,0.6)]'
+                  : activeArtwork === 'darwinRocket'
+                  ? 'hover:scale-105 filter drop-shadow-[0_0_15px_rgba(249,115,22,0.7)]'
+                  : ''
+              }`}
               style={{
-                imageRendering: 'pixelated',
+                imageRendering:
+                  activeArtwork === 'cat' ||
+                  activeArtwork === 'gumballSky' ||
+                  activeArtwork === 'darwinRocket'
+                    ? 'pixelated'
+                    : 'auto',
               }}
             />
 
-            {/* 3. FLOATING PHYSICS FORMULAS AROUND THE ENTITY */}
+            {/* 3. Darwin Rocket Balística Overlay (when Darwin Rocket is active) */}
+            {activeArtwork === 'darwinRocket' && (
+              <div className="absolute inset-0 pointer-events-none z-15">
+                <div className="absolute bottom-6 right-8 w-28 h-28 rounded-full blur-xl pointer-events-none bg-orange-500/50 animate-pulse" />
+                <div className="absolute bottom-2 left-2 bg-black/85 px-2.5 py-1 rounded-lg border border-orange-400 text-[10px] font-mono text-orange-300 shadow flex items-center gap-1.5">
+                  <Sparkles className="w-3 h-3 text-yellow-300" />
+                  <span>
+                    🚀 TIRO PARABÓLICO • θ = {darwinAngle}° •{' '}
+                    {darwinAngle === 45 ? 'ALCANCE MÁXIMO (R = v₀²/g)' : 'TIRO ELEVADO (H_max)'}
+                  </span>
+                </div>
+                <div className="absolute top-2 right-2 bg-orange-500/90 text-white font-black text-[9px] px-2 py-0.5 rounded border border-white shadow">
+                  DARWIN 🧡 ORBIT
+                </div>
+              </div>
+            )}
+
+            {/* 4. Gumball in Free Fall Overlay (when Gumball Sky is active) */}
+            {activeArtwork === 'gumballSky' && (
+              <div className="absolute inset-0 pointer-events-none z-15">
+                <div className="absolute bottom-2 left-2 bg-black/85 px-2.5 py-1 rounded-lg border border-sky-400 text-[10px] font-mono text-sky-300 shadow flex items-center gap-1.5">
+                  <Sparkles className="w-3 h-3 text-yellow-300" />
+                  <span>
+                    {vacuumMode
+                      ? '🌌 VACÍO GALILEANO • g = 9.8 m/s²'
+                      : '💨 ATMÓSFERA • ARRASTRE ACTIVO'}
+                  </span>
+                </div>
+                <div className="absolute top-2 right-2 bg-sky-500/90 text-white font-black text-[9px] px-2 py-0.5 rounded border border-white shadow">
+                  GUMBALL 💙 PEACE
+                </div>
+              </div>
+            )}
+
+            {/* 5. Rocket Thruster Plasma Flare Overlay (when Rocket Cat is active) */}
+            {activeArtwork === 'rocketCat' && (
+              <div className="absolute inset-0 pointer-events-none z-15">
+                {/* Thruster exhaust glow point */}
+                <div
+                  className={`absolute bottom-6 right-8 w-24 h-24 rounded-full blur-xl pointer-events-none transition-all duration-300 ${
+                    turboActive
+                      ? 'bg-amber-400/80 scale-150 animate-pulse'
+                      : 'bg-orange-500/40 animate-pulse'
+                  }`}
+                />
+                <div className="absolute bottom-2 left-2 bg-black/80 px-2 py-0.5 rounded-lg border border-yellow-400/60 text-[9px] font-mono text-yellow-300 shadow">
+                  🛰️ ÓRBITA BAJA • {turboActive ? 'v = 11.2 km/s (Escape)' : 'v = 7.8 km/s'}
+                </div>
+              </div>
+            )}
+
+            {/* 6. FLOATING PHYSICS FORMULAS AROUND THE ENTITY */}
             <div className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between p-2 sm:p-3">
               {/* Top Row Formulas */}
               <div className="flex items-center justify-between gap-1">
@@ -811,20 +909,112 @@ export const WeirdPhysicsStory: React.FC<WeirdPhysicsStoryProps> = ({
             </div>
           </div>
 
-          {/* Quick link button to Free World */}
+          {/* Interactive Turbo MUA Thruster Control (when Rocket Cat is active) */}
+          {activeArtwork === 'rocketCat' && (
+            <div className="mt-2.5 bg-gradient-to-r from-rose-950/80 via-black to-purple-950/80 border-2 border-rose-400/80 rounded-2xl p-2.5 flex items-center justify-between gap-2 shadow-[3px_3px_0px_#000]">
+              <div className="flex flex-col">
+                <div className="flex items-center gap-1.5 text-[11px] font-black text-rose-300 uppercase">
+                  <Rocket className="w-3.5 h-3.5 text-yellow-400 animate-bounce" />
+                  <span>PROPULSIÓN MUA EN ÓRBITA</span>
+                </div>
+                <div className="text-[10px] font-mono text-slate-300">
+                  {turboActive ? '🔥 a = 25.0 m/s² • v(t) = v₀ + at' : '⚡ a = 9.8 m/s² • v(t) = 7.8 km/s'}
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  if (!turboActive) {
+                    sfx.playLaser(1300);
+                    sfx.playWarpWhoosh();
+                  } else {
+                    sfx.playPop();
+                  }
+                  setTurboActive(!turboActive);
+                }}
+                className={`px-3 py-1.5 rounded-xl border-2 border-black font-black text-xs uppercase shadow-[2px_2px_0px_#000] cursor-pointer transition-all active:translate-x-0.5 active:translate-y-0.5 flex items-center gap-1.5 ${
+                  turboActive
+                    ? 'bg-yellow-400 text-black animate-pulse'
+                    : 'bg-rose-600 hover:bg-rose-500 text-white'
+                }`}
+              >
+                <Zap className="w-3.5 h-3.5 fill-current" />
+                <span>{turboActive ? 'TURBO ON 🔥' : 'PROPULSIÓN 🚀'}</span>
+              </button>
+            </div>
+          )}
+
+          {/* Interactive Galileo Vacuum / Atmosphere Controller (when Gumball in Free Fall is active) */}
+          {activeArtwork === 'gumballSky' && (
+            <div className="mt-2.5 bg-gradient-to-r from-sky-950/90 via-black to-blue-950/90 border-2 border-sky-400/80 rounded-2xl p-2.5 flex items-center justify-between gap-2 shadow-[3px_3px_0px_#000]">
+              <div className="flex flex-col">
+                <div className="flex items-center gap-1.5 text-[11px] font-black text-sky-300 uppercase">
+                  <Sparkles className="w-3.5 h-3.5 text-yellow-400" />
+                  <span>EXPERIMENTO DE GALILEO EN CAÍDA LIBRE</span>
+                </div>
+                <div className="text-[10px] font-mono text-slate-300">
+                  {vacuumMode
+                    ? '🌌 Vacío absoluto: ¡Gumball y una pluma caen a g = 9.8 m/s²!'
+                    : '💨 Con aire: la fricción F_d frena los cuerpos según su área'}
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  sfx.playBoing();
+                  setVacuumMode(!vacuumMode);
+                }}
+                className={`px-3 py-1.5 rounded-xl border-2 border-black font-black text-xs uppercase shadow-[2px_2px_0px_#000] cursor-pointer transition-all active:translate-x-0.5 active:translate-y-0.5 flex items-center gap-1.5 ${
+                  vacuumMode
+                    ? 'bg-sky-400 text-black shadow-[2px_2px_0px_#000]'
+                    : 'bg-amber-400 text-black shadow-[2px_2px_0px_#000]'
+                }`}
+              >
+                <span>{vacuumMode ? '🌌 VACÍO ON' : '💨 AIRE ON'}</span>
+              </button>
+            </div>
+          )}
+
+          {/* Interactive Darwin Rocket Ballistics Controller (when Darwin Rocket is active) */}
+          {activeArtwork === 'darwinRocket' && (
+            <div className="mt-2.5 bg-gradient-to-r from-orange-950/90 via-black to-emerald-950/90 border-2 border-orange-400/80 rounded-2xl p-2.5 flex items-center justify-between gap-2 shadow-[3px_3px_0px_#000]">
+              <div className="flex flex-col">
+                <div className="flex items-center gap-1.5 text-[11px] font-black text-orange-300 uppercase">
+                  <Rocket className="w-3.5 h-3.5 text-yellow-400 animate-bounce" />
+                  <span>BALÍSTICA CÓSMICA DE DARWIN (θ = {darwinAngle}°)</span>
+                </div>
+                <div className="text-[10px] font-mono text-slate-300">
+                  {darwinAngle === 45
+                    ? '🎯 45° Óptimo: ¡sen(2θ) = 1.0, máximo alcance horizontal!'
+                    : '⚡ 80° Elevado: ¡Gran altitud H_max pero alcance horizontal menor!'}
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  sfx.playLaser(1300);
+                  sfx.playPop();
+                  setDarwinAngle(darwinAngle === 45 ? 80 : 45);
+                }}
+                className={`px-3 py-1.5 rounded-xl border-2 border-black font-black text-xs uppercase shadow-[2px_2px_0px_#000] cursor-pointer transition-all active:translate-x-0.5 active:translate-y-0.5 flex items-center gap-1.5 ${
+                  darwinAngle === 45
+                    ? 'bg-orange-400 text-black shadow-[2px_2px_0px_#000]'
+                    : 'bg-emerald-400 text-black shadow-[2px_2px_0px_#000]'
+                }`}
+              >
+                <span>{darwinAngle === 45 ? '🎯 45° ÓPTIMO' : '⚡ 80° ELEVADO'}</span>
+              </button>
+            </div>
+          )}
+
+          {/* Quick link button to chapter simulator */}
           <button
             onClick={() => {
-              sfx.playFanfare();
-              if (onFinishStoryToFreeWorld) {
-                onFinishStoryToFreeWorld();
-              } else {
-                onOpenWorld('free');
-              }
+              sfx.playWarpWhoosh();
+              onOpenWorld(chapter.simulationWorldTarget);
             }}
             className="mt-3 w-full py-2.5 bg-gradient-to-r from-amber-400 via-yellow-300 to-pink-500 border-3 border-black text-black font-black text-xs sm:text-sm uppercase rounded-2xl shadow-[4px_4px_0px_#000] hover:shadow-[6px_6px_0px_#FF007F] hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            title={`Abrir Simulador del Capítulo ${chapter.id}`}
           >
-            <Orbit className="w-4 h-4 text-black animate-spin" />
-            <span>IR DIRECTO AL MUNDO LIBRE 🎡</span>
+            <Play className="w-4 h-4 text-black fill-black" />
+            <span>PROBAR EN SIMULADOR (MUNDO {chapter.id}) 🧪</span>
           </button>
         </div>
 
@@ -1106,14 +1296,14 @@ export const WeirdPhysicsStory: React.FC<WeirdPhysicsStoryProps> = ({
             ) : (
               <button
                 disabled={!answeredCorrectly}
-                onClick={handleFinishToFreeWorld}
+                onClick={handleFinishStory}
                 className={`px-5 py-2.5 font-black text-xs sm:text-sm uppercase rounded-xl border-3 border-black shadow-[4px_4px_0px_#000] flex items-center gap-2 transition-all ${
                   answeredCorrectly
                     ? 'bg-gradient-to-r from-amber-400 via-yellow-300 to-pink-500 text-black cursor-pointer hover:brightness-110 animate-bounce'
                     : 'bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed'
                 }`}
               >
-                <span>¡ ENTRAR AL MUNDO LIBRE ! 🎡</span>
+                <span>¡ IR A LOS SIMULADORES ! 🚀</span>
                 <Sparkles className="w-4 h-4 fill-black" />
               </button>
             )}
@@ -1140,7 +1330,7 @@ export const WeirdPhysicsStory: React.FC<WeirdPhysicsStoryProps> = ({
 
             <p className="text-xs sm:text-sm text-slate-200 font-sans leading-relaxed">
               Has desentrañado los 4 misterios del cosmos junto a Gumball, Darwin, Anais y el Ente Cósmico.
-              El Guardián del Vórtice ha abierto el portal al <strong>Mundo Libre (Carnaval & Parque Mecánico)</strong> para que experimentes sin límites.
+              ¡Ahora puedes explorar y experimentar libremente en los <strong>4 Mundos de simulación física</strong>!
             </p>
 
             <div className="p-3 bg-black/60 border-2 border-purple-600 rounded-2xl flex items-center justify-around text-xs font-bold">
@@ -1157,11 +1347,11 @@ export const WeirdPhysicsStory: React.FC<WeirdPhysicsStoryProps> = ({
 
             <div className="pt-2">
               <button
-                onClick={handleFinishToFreeWorld}
+                onClick={handleFinishStory}
                 className="w-full py-4 bg-gradient-to-r from-yellow-300 via-pink-500 to-cyan-400 border-4 border-black text-black font-black text-base sm:text-xl uppercase tracking-wider rounded-2xl shadow-[6px_6px_0px_#000] hover:shadow-[10px_10px_0px_#00E5FF] hover:-translate-y-1 active:translate-x-1 active:translate-y-1 transition-all flex items-center justify-center gap-3 cursor-pointer animate-pulse"
               >
                 <Sparkles className="w-6 h-6 fill-black" />
-                <span>🎡 ¡ENTRAR AL MUNDO LIBRE AHORA! 🚀</span>
+                <span>🚀 ¡IR A LOS SIMULADORES AHORA! 🌟</span>
               </button>
             </div>
           </motion.div>

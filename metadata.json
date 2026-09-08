@@ -1,6 +1,6 @@
 {
   "name": "Relatividad Especial: El Autobús de Einstein",
-  "description": "Simulación física interactiva con portada psicodélica animada 'esquizofrenia', historia interactiva rara sobre la física, 4 mundos temáticos y Mundo Libre sandbox con gravedad variable.",
+  "description": "Simulación física interactiva con portada psicodélica animada 'esquizofrenia', historia interactiva sobre la física y 4 mundos temáticos de simulación (Relatividad, MRU vs MUA, Caída Libre y Tiro Parabólico).",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

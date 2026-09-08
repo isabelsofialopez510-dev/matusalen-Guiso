@@ -18,8 +18,7 @@ import { sfx } from '../utils/audioEffects';
 interface PsychedelicIntroScreenProps {
   onStartStory?: () => void;
   onOpenWorlds: () => void;
-  onOpenSandbox?: () => void;
-  onOpenWorldDirect?: (world: 'world1' | 'world2' | 'world3' | 'world4' | 'free') => void;
+  onOpenWorldDirect?: (world: 'world1' | 'world2' | 'world3' | 'world4') => void;
   onOpenProfile?: () => void;
   userProfile?: { name: string; age: string; grade: string } | null;
   isMuted: boolean;
