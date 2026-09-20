@@ -8,9 +8,10 @@ import {
   Sparkles,
   BookOpen,
   GraduationCap,
-  User,
+  Users,
   School,
   Zap,
+  Target,
 } from 'lucide-react';
 import pixelCoverArt from '../assets/images/psychedelic_pixel_cover_1787926979816.jpg';
 import { sfx } from '../utils/audioEffects';
@@ -20,6 +21,7 @@ interface PsychedelicIntroScreenProps {
   onOpenWorlds: () => void;
   onOpenWorldDirect?: (world: 'world1' | 'world2' | 'world3' | 'world4') => void;
   onOpenProfile?: () => void;
+  onOpenAngryGumball?: () => void;
   userProfile?: { name: string; age: string; grade: string } | null;
   isMuted: boolean;
   onToggleSound: () => void;
@@ -49,6 +51,7 @@ interface LivingEye {
 export const PsychedelicIntroScreen: React.FC<PsychedelicIntroScreenProps> = ({
   onStartStory,
   onOpenWorlds,
+  onOpenAngryGumball,
   isMuted,
   onToggleSound,
 }) => {
@@ -424,27 +427,46 @@ export const PsychedelicIntroScreen: React.FC<PsychedelicIntroScreenProps> = ({
         </motion.div>
       </header>
 
-      {/* CENTER AREA: ONLY THE INGRESS / ENTRY BUTTON FOR THE STORY */}
+      {/* CENTER AREA: INGRESS / ENTRY BUTTONS */}
       <main className="relative z-30 my-auto flex flex-col items-center justify-center p-4">
         <motion.div
           initial={{ scale: 0.85, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.5 }}
-          className="flex flex-col items-center gap-3"
+          className="flex flex-col items-center gap-3 w-full max-w-2xl"
         >
-          <button
-            id="btn-ingreso-historia"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleStart();
-            }}
-            className="group relative px-8 sm:px-14 py-4 sm:py-6 bg-gradient-to-r from-yellow-400 via-amber-400 to-pink-500 hover:from-yellow-300 hover:via-amber-300 hover:to-pink-400 border-4 border-black rounded-3xl text-black font-black text-xl sm:text-3xl md:text-4xl uppercase tracking-widest shadow-[8px_8px_0px_#000] hover:shadow-[12px_12px_0px_#FF007F] hover:-translate-y-1 active:translate-y-1 active:shadow-[4px_4px_0px_#000] transition-all cursor-pointer flex items-center justify-center gap-3 sm:gap-4 animate-bounce"
-            title="Iniciar la Historia de Física Cuántica"
-          >
-            <BookOpen className="w-6 h-6 sm:w-9 sm:h-9 text-black group-hover:scale-110 transition-transform" />
-            <span className="drop-shadow-[1px_1px_0px_#fff]">INICIAR HISTORIA</span>
-            <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-black animate-spin" />
-          </button>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full">
+            <button
+              id="btn-ingreso-historia"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleStart();
+              }}
+              className="w-full sm:w-auto group relative px-6 sm:px-10 py-4 sm:py-5 bg-gradient-to-r from-yellow-400 via-amber-400 to-pink-500 hover:from-yellow-300 hover:via-amber-300 hover:to-pink-400 border-4 border-black rounded-3xl text-black font-black text-lg sm:text-2xl uppercase tracking-wider shadow-[6px_6px_0px_#000] hover:shadow-[10px_10px_0px_#FF007F] hover:-translate-y-1 active:translate-y-1 active:shadow-[3px_3px_0px_#000] transition-all cursor-pointer flex items-center justify-center gap-3 animate-bounce"
+              title="Iniciar la Historia de Física Cuántica"
+            >
+              <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-black group-hover:scale-110 transition-transform" />
+              <span className="drop-shadow-[1px_1px_0px_#fff]">INICIAR HISTORIA</span>
+              <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-black animate-spin" />
+            </button>
+
+            {onOpenAngryGumball && (
+              <button
+                id="btn-juego-angry-gumball"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  sfx.playBoing();
+                  onOpenAngryGumball();
+                }}
+                className="w-full sm:w-auto group relative px-6 sm:px-10 py-4 sm:py-5 bg-gradient-to-r from-sky-400 via-pink-400 to-yellow-300 hover:from-sky-300 hover:via-pink-300 hover:to-yellow-200 border-4 border-black rounded-3xl text-black font-black text-lg sm:text-2xl uppercase tracking-wider shadow-[6px_6px_0px_#000] hover:shadow-[10px_10px_0px_#00E5FF] hover:-translate-y-1 active:translate-y-1 active:shadow-[3px_3px_0px_#000] transition-all cursor-pointer flex items-center justify-center gap-3"
+                title="Juego estilo Angry Birds con Gumball y Darwin"
+              >
+                <Target className="w-6 h-6 sm:w-8 sm:h-8 text-black group-hover:rotate-45 transition-transform" />
+                <span className="drop-shadow-[1px_1px_0px_#fff]">ANGRY GUMBALL 🐰</span>
+                <span className="text-xl">🎯</span>
+              </button>
+            )}
+          </div>
 
           <span className="text-[10px] sm:text-xs font-silkscreen text-amber-200 pixel-text-shadow tracking-wider bg-black/60 px-3 py-1 rounded-lg border border-yellow-400/40">
             [ Presiona ENTER o ESPACIO para comenzar ]
@@ -461,15 +483,15 @@ export const PsychedelicIntroScreen: React.FC<PsychedelicIntroScreenProps> = ({
           className="bg-black/85 border-3 border-yellow-400 rounded-2xl sm:rounded-3xl p-3 sm:p-4 backdrop-blur-md shadow-[6px_6px_0px_#000] text-center"
         >
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-3 items-center divide-y md:divide-y-0 md:divide-x divide-yellow-400/30">
-            {/* 1. Autora */}
+            {/* 1. Autores */}
             <div className="flex items-center justify-center gap-2 py-1 md:py-0 px-2 text-center">
-              <User className="w-4 h-4 text-pink-400 shrink-0" />
+              <Users className="w-4 h-4 text-pink-400 shrink-0" />
               <div className="flex flex-col">
                 <span className="text-[9px] font-silkscreen text-pink-300 font-bold uppercase tracking-wider">
-                  AUTORA
+                  AUTORES
                 </span>
                 <span className="text-xs sm:text-sm font-black text-white pixel-text-shadow">
-                  Isabel Sofía López Guisado
+                  Isabel Sofía López Guisado y Juan Alejandro Mejía
                 </span>
               </div>
             </div>

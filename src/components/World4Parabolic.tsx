@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Target, RotateCcw, Play, Pause, Sparkles, CheckCircle, Heart, Star, Volume2, VolumeX, Flame } from 'lucide-react';
 import bgGarden from '../assets/images/elmore_garden_bg_1787237438721.jpg';
+import bgAdventureTreehouse from '../assets/images/treehouse_adventure_bg.jpg';
 import gumballGlobeImg from '../assets/images/gumball_machine_globe_1787237193159.jpg';
 import { sfx } from '../utils/audioEffects';
 import { PixelSlider } from './PixelSlider';
@@ -29,6 +30,7 @@ export const World4Parabolic: React.FC<World4ParabolicProps> = ({
   const [showFormulas, setShowFormulas] = useState<boolean>(true);
   const [isMuted, setIsMuted] = useState<boolean>(() => sfx.getMuted());
   const [celebrationParticles, setCelebrationParticles] = useState<boolean>(false);
+  const [selectedBg, setSelectedBg] = useState<'treehouse' | 'garden'>('treehouse');
 
   // Time state for animation
   const [tSim, setTSim] = useState<number>(0);
@@ -295,25 +297,34 @@ export const World4Parabolic: React.FC<World4ParabolicProps> = ({
 
       {/* 2. Interactive SVG Canvas with Garden Background & Animated Darwin */}
       <div className="border-4 bg-[#030712] border-emerald-400 shadow-[0_0_25px_rgba(52,211,153,0.3)] flex flex-col overflow-hidden relative rounded-lg">
-        <div className="px-4 py-2 bg-[#0b0e1b] text-emerald-300 border-b-2 border-emerald-400 flex items-center justify-between font-mono text-xs">
+        <div className="px-4 py-2 bg-[#0b0e1b] text-emerald-300 border-b-2 border-emerald-400 flex flex-wrap items-center justify-between gap-2 font-mono text-xs">
           <span className="font-bold uppercase tracking-wider text-emerald-300 flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            Jardín Botánico de Elmore: Darwin lanza la Esfera de Chicles (v₀ = {v0} m/s, θ = {angleDeg.toFixed(1)}°)
+            {selectedBg === 'treehouse' ? 'Casa del Árbol (Hora de Aventura)' : 'Jardín Botánico de Elmore'}: Darwin lanza la Esfera (v₀ = {v0} m/s, θ = {angleDeg.toFixed(1)}°)
           </span>
-          <span className="text-[11px] text-slate-300">
-            H_max = {hMax.toFixed(1)} m | X_max = {xMax.toFixed(0)} m | t = {tFlight.toFixed(1)} s
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-[11px] text-slate-300 hidden sm:inline">
+              H_max = {hMax.toFixed(1)} m | X_max = {xMax.toFixed(0)} m | t = {tFlight.toFixed(1)} s
+            </span>
+            <button
+              onClick={() => setSelectedBg((b) => (b === 'treehouse' ? 'garden' : 'treehouse'))}
+              className="px-2.5 py-1 rounded bg-emerald-950/80 border border-emerald-400/60 hover:bg-emerald-900 text-emerald-200 text-[11px] font-mono flex items-center gap-1 cursor-pointer transition-colors"
+              title="Cambiar fondo visual"
+            >
+              <span>{selectedBg === 'treehouse' ? '🌄 Casa del Árbol' : '🌿 Jardín Elmore'}</span>
+            </button>
+          </div>
         </div>
 
         <div className="relative w-full h-[440px] overflow-hidden flex items-center justify-center bg-[#071311]">
-          {/* Botanical Garden of Elmore Background */}
+          {/* Visual Scenario Background */}
           <img
-            src={bgGarden}
-            alt="Jardín Botánico de Elmore"
+            src={selectedBg === 'treehouse' ? bgAdventureTreehouse : bgGarden}
+            alt={selectedBg === 'treehouse' ? 'Casa del Árbol de Hora de Aventura al atardecer' : 'Jardín Botánico de Elmore'}
             referrerPolicy="no-referrer"
-            className="absolute inset-0 w-full h-full object-cover opacity-75 pointer-events-none select-none"
+            className="absolute inset-0 w-full h-full object-cover opacity-80 pointer-events-none select-none transition-opacity duration-300"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-sky-900/20 via-transparent to-[#040d0a]/70 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-b from-sky-900/15 via-transparent to-[#040d0a]/70 pointer-events-none" />
 
           {/* Celebratory sticker overlay when Darwin hits the target */}
           {hasLanded && hitTarget && (

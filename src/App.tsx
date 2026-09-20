@@ -62,6 +62,7 @@ import { PixelSlider } from './components/PixelSlider';
 import { PixelGumball, PixelDarwin, PixelAnais, PixelPenny, PixelTrioBanner } from './components/PixelCharacters';
 import { PsychedelicIntroScreen } from './components/PsychedelicIntroScreen';
 import { WeirdPhysicsStory } from './components/WeirdPhysicsStory';
+import { AngryGumballGame } from './components/AngryGumballGame';
 import { sfx } from './utils/audioEffects';
 import {
   getLorentzFactor,
@@ -100,7 +101,7 @@ export interface RaceRecord {
 
 export default function App() {
   // --- Navigation Screen State ---
-  const [activeScreen, setActiveScreen] = useState<'home' | 'story' | 'worlds' | 'simulation'>('home');
+  const [activeScreen, setActiveScreen] = useState<'home' | 'story' | 'worlds' | 'simulation' | 'angry_gumball'>('home');
 
   // --- User Profile / Registration State ---
   const [userProfile, setUserProfile] = useState<{ name: string; age: string; grade: string } | null>(() => {
@@ -695,6 +696,10 @@ export default function App() {
             sfx.playWarpWhoosh();
             setActiveScreen('worlds');
           }}
+          onOpenAngryGumball={() => {
+            sfx.playBoing();
+            setActiveScreen('angry_gumball');
+          }}
           onOpenWorldDirect={(targetWorld) => {
             sfx.playWarpWhoosh();
             setWorldMode(targetWorld);
@@ -888,6 +893,10 @@ export default function App() {
           }}
           onGoHome={() => setActiveScreen('home')}
           onOpenStory={() => setActiveScreen('story')}
+          onOpenAngryGumball={() => {
+            sfx.playBoing();
+            setActiveScreen('angry_gumball');
+          }}
           userProfile={userProfile}
           onOpenProfileModal={() => {
             setRegName(userProfile?.name || '');
@@ -1036,6 +1045,18 @@ export default function App() {
     );
   }
 
+  // --- ANGRY GUMBALL GAME SCREEN (JUEGO ESTILO ANGRY BIRDS) ---
+  if (activeScreen === 'angry_gumball') {
+    return (
+      <AngryGumballGame
+        onGoHome={() => setActiveScreen('home')}
+        onGoWorlds={() => setActiveScreen('worlds')}
+        isMuted={isMuted}
+        onToggleSound={toggleSound}
+      />
+    );
+  }
+
   return (
     <div
       className={`min-h-screen font-sans antialiased p-2 sm:p-4 md:p-6 transition-all duration-500 ${
@@ -1123,6 +1144,18 @@ export default function App() {
             >
               <Zap className="w-4 h-4 text-yellow-300 fill-yellow-300" />
               <span className="hidden sm:inline">📖 Historia Rara</span>
+            </button>
+
+            <button
+              onClick={() => {
+                sfx.playBoing();
+                setActiveScreen('angry_gumball');
+              }}
+              className="px-3 py-2 border-2 border-black bg-gradient-to-r from-sky-400 via-pink-400 to-yellow-300 text-black font-black text-xs uppercase flex items-center gap-1.5 shadow-[2px_2px_0px_#000] hover:brightness-110 transition-all cursor-pointer"
+              title="Juego estilo Angry Birds con Gumball y Darwin"
+            >
+              <Target className="w-4 h-4" />
+              <span className="hidden sm:inline">🎯 Angry Gumball</span>
             </button>
           </div>
           <div>

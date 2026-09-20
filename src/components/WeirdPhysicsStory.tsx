@@ -1361,7 +1361,7 @@ export const WeirdPhysicsStory: React.FC<WeirdPhysicsStoryProps> = ({
       {/* FOOTER: CREDITS & INSTITUTION */}
       <footer className="relative z-30 w-full max-w-7xl mx-auto py-2 text-[10px] font-mono text-amber-200/80 text-center flex flex-col sm:flex-row items-center justify-between gap-1 border-t border-purple-900/50 pt-2 mt-2">
         <span>🏛️ Institución Educativa Josefa Campos</span>
-        <span>Autora: <strong>Isabel Sofía López Guisado</strong> • Docente: <strong>Jorge Armando Jaramillo</strong></span>
+        <span>Autores: <strong>Isabel Sofía López Guisado y Juan Alejandro Mejía</strong> • Docente: <strong>Jorge Armando Jaramillo</strong></span>
         <span>Crónicas del Vórtice Cuántico &copy; 2026</span>
       </footer>
     </div>

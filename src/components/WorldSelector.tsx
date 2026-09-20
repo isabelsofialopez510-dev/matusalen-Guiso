@@ -30,6 +30,7 @@ interface WorldSelectorProps {
   onSelectWorld: (world: 'world1' | 'world2' | 'world3' | 'world4') => void;
   onGoHome: () => void;
   onOpenStory?: () => void;
+  onOpenAngryGumball?: () => void;
   userProfile: { name: string; age: string; grade: string } | null;
   onOpenProfileModal: () => void;
 }
@@ -38,6 +39,7 @@ export const WorldSelector: React.FC<WorldSelectorProps> = ({
   onSelectWorld,
   onGoHome,
   onOpenStory,
+  onOpenAngryGumball,
   userProfile,
   onOpenProfileModal,
 }) => {
@@ -190,6 +192,20 @@ export const WorldSelector: React.FC<WorldSelectorProps> = ({
               >
                 <Zap className="w-4 h-4 text-yellow-300 fill-yellow-300" />
                 <span>👁️ Historia Rara</span>
+              </button>
+            )}
+
+            {onOpenAngryGumball && (
+              <button
+                onClick={() => {
+                  sfx.playBoing();
+                  onOpenAngryGumball();
+                }}
+                className="px-4 py-2.5 bg-gradient-to-r from-sky-400 via-pink-400 to-yellow-300 border-3 border-black text-black font-black text-xs uppercase rounded-2xl shadow-[3px_3px_0px_#000] hover:brightness-110 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center gap-1.5 cursor-pointer rotate-[-1deg]"
+                title="Juego estilo Angry Birds: Angry Gumball & Darwin"
+              >
+                <Target className="w-4 h-4 stroke-[3]" />
+                <span>🎯 Angry Gumball</span>
               </button>
             )}
 
@@ -516,7 +532,7 @@ export const WorldSelector: React.FC<WorldSelectorProps> = ({
         <div className="bg-[#16123b]/95 border-3 border-yellow-400/80 rounded-2xl p-4 sm:p-5 shadow-[6px_6px_0px_#000] flex flex-col md:flex-row items-center justify-between gap-3 text-xs font-mono text-amber-200">
           <div className="text-center md:text-left space-y-0.5">
             <p className="font-black text-white text-sm">🏛️ Institución Educativa Josefa Campos</p>
-            <p className="text-pink-300 font-bold">Autores: Isabel Sofía López y Juan Alejandro Mejía • Docente: Jorge Armando Jaramillo Bravo</p>
+            <p className="text-pink-300 font-bold">Autores: Isabel Sofía López Guisado y Juan Alejandro Mejía • Docente: Jorge Armando Jaramillo Bravo</p>
           </div>
           <div className="flex items-center gap-2">
             <button
