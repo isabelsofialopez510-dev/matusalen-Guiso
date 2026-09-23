@@ -16,6 +16,8 @@ import {
   BookOpen,
   Heart,
   HeartCrack,
+  Bomb,
+  Dices,
 } from 'lucide-react';
 import gumballCatapultArt from '../assets/images/gumball_catapult_lab_1789929108215.jpg';
 import bgAdventureTreehouse from '../assets/images/treehouse_adventure_bg.jpg';
@@ -27,6 +29,9 @@ import {
   DebrisFragment,
   SmokePuff,
   SlingshotElastic,
+  ExplosionBurst,
+  createExplosionBurst,
+  drawExplosionBursts,
   drawAnimatedClouds,
   drawAnimatedRainbow,
   drawAnimatedGumball,
@@ -39,6 +44,16 @@ import {
   drawDebris,
   drawSmokePuffs,
   spawnDebrisExplosion,
+  drawSceneryElements,
+  PowerUpCrateData,
+  drawPowerUpCrates,
+  drawPowerUpAura,
+  drawAnimatedSun,
+  drawAnimatedBirds,
+  drawAnimatedButterflies,
+  drawAnimatedWindLeavesAndPetals,
+  drawAnimatedInFlightProjectile,
+  drawFullCanvasCelebration,
 } from './angryGumballAnimations';
 
 interface AngryGumballGameProps {
@@ -47,6 +62,9 @@ interface AngryGumballGameProps {
   isMuted?: boolean;
   onToggleSound?: () => void;
 }
+
+// Power-up definitions
+export type PowerUpType = 'explosive' | 'double_bounce';
 
 // Types for Projectile, Blocks, Targets, and Particles
 type ProjectileType = 'jake' | 'grumosa' | 'daisy' | 'bomb' | 'gumball' | 'darwin_split';
@@ -62,6 +80,8 @@ interface Projectile {
   hasCollided: boolean;
   hasSplit?: boolean;
   exploded?: boolean;
+  powerUp?: PowerUpType;
+  bouncesLeft?: number;
   trail: { x: number; y: number; alpha: number }[];
   rotation?: number;
   squashX?: number;
@@ -89,6 +109,9 @@ interface EnemyTarget {
   id: number;
   x: number;
   y: number;
+  baseX?: number;
+  patrolSpeed?: number;
+  patrolRange?: number;
   vx: number;
   vy: number;
   radius: number;
@@ -119,6 +142,18 @@ interface FloatingScore {
   text: string;
   alpha: number;
   color: string;
+}
+
+interface GroundShockwave {
+  id: number;
+  x: number;
+  y: number;
+  rx: number;
+  maxRx: number;
+  ry: number;
+  alpha: number;
+  color: string;
+  lineWidth: number;
 }
 
 // Level configuration
@@ -260,6 +295,9 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
   const [gameState, setGameState] = useState<'aiming' | 'flying' | 'settling' | 'victory' | 'defeat' | 'game_over'>('aiming');
   const [lives, setLives] = useState<number>(3);
   const [showLivesModal, setShowLivesModal] = useState<boolean>(false);
+  const [difficulty, setDifficulty] = useState<'facil' | 'medio' | 'dificil'>('medio');
+  const difficultyRef = useRef<'facil' | 'medio' | 'dificil'>('medio');
+  const windSpeedRef = useRef<number>(1.5);
   const [starsWon, setStarsWon] = useState<number>(0);
   const [showArtworkModal, setShowArtworkModal] = useState<boolean>(false);
   const [modalArtworkTab, setModalArtworkTab] = useState<'treehouse' | 'jake' | 'grumosa' | 'elmore'>('treehouse');
@@ -303,6 +341,19 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
   const comicBannersRef = useRef<ComicBanner[]>([]);
   const debrisRef = useRef<DebrisFragment[]>([]);
   const smokePuffsRef = useRef<SmokePuff[]>([]);
+  const explosionsRef = useRef<ExplosionBurst[]>([]);
+  const groundShockwavesRef = useRef<GroundShockwave[]>([]);
+  const cameraShakeRef = useRef<{
+    trauma: number;
+    impulseX: number;
+    impulseY: number;
+    decayRate: number;
+  }>({
+    trauma: 0,
+    impulseX: 0,
+    impulseY: 0,
+    decayRate: 0.034,
+  });
   const slingshotElasticRef = useRef<SlingshotElastic>({
     twangTime: 1.0,
     ampX: 0,
@@ -320,6 +371,30 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
     timer: 180,
   });
 
+  // --- TACTICAL POWER-UPS SYSTEM ---
+  const [activePowerUp, setActivePowerUp] = useState<PowerUpType | null>(null);
+  const activePowerUpRef = useRef<PowerUpType | null>(null);
+  useEffect(() => {
+    activePowerUpRef.current = activePowerUp;
+  }, [activePowerUp]);
+
+  const [powerUpInventory, setPowerUpInventory] = useState<{ explosive: number; double_bounce: number }>({
+    explosive: 2,
+    double_bounce: 2,
+  });
+
+  // Floating Mystery Crates in each level
+  const powerUpCratesRef = useRef<PowerUpCrateData[]>([]);
+
+  // Natural Physics Camera Shake Engine (Trauma-based quadratic roll-off + directional momentum)
+  const applyNaturalCameraShake = useCallback((traumaAmount: number, impulseX = 0, impulseY = 0) => {
+    const cs = cameraShakeRef.current;
+    cs.trauma = Math.min(1.0, cs.trauma + traumaAmount);
+    cs.impulseX = Math.max(-16, Math.min(16, cs.impulseX + impulseX));
+    cs.impulseY = Math.max(-14, Math.min(14, cs.impulseY + impulseY));
+    setScreenShake(Math.ceil(cs.trauma * 12));
+  }, []);
+
   // Helper to trigger comic action badges (e.g. ¡KABOOM!, ¡BULLSEYE!)
   const spawnComicBanner = useCallback((text: string, x: number, y: number, color = '#fef08a', bgColor = '#dc2626') => {
     comicBannersRef.current.push({
@@ -336,6 +411,201 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
       maxLife: 60,
     });
   }, []);
+
+  // Synchronized target explosion effect (multi-layer sound + particles + shockwave + smoke + screen shake)
+  const triggerTargetHitExplosion = useCallback(
+    (tx: number, ty: number, targetColor: string, _targetName: string, intensity: 'normal' | 'heavy' | 'massive' = 'heavy') => {
+      // 1. Synchronized Audio: Instant, zero-latency multi-layer impact sound
+      sfx.playTargetExplosion(intensity);
+
+      // 2. Camera Jolt
+      applyNaturalCameraShake(intensity === 'massive' ? 0.95 : 0.7, 0, 4);
+
+      // 3. Shockwave & Comic Starburst
+      const maxR = intensity === 'massive' ? 95 : 78;
+      explosionsRef.current.push(createExplosionBurst(tx, ty, '#facc15', maxR, 14));
+      explosionsRef.current.push(createExplosionBurst(tx, ty, targetColor, maxR * 0.75, 10));
+
+      // 4. Radial Ejection of Multi-colored Particles in 360°
+      const particleCount = intensity === 'massive' ? 48 : 36;
+      for (let i = 0; i < particleCount; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 9 + 3;
+        const colorPalette = [targetColor, '#facc15', '#f97316', '#ef4444', '#ffffff'];
+        const color = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+        const isStar = i % 2 === 0;
+
+        particlesRef.current.push({
+          x: tx + (Math.random() - 0.5) * 10,
+          y: ty + (Math.random() - 0.5) * 10,
+          vx: Math.cos(angle) * speed + (Math.random() - 0.5) * 2,
+          vy: Math.sin(angle) * speed - Math.random() * 2.5,
+          life: 25 + Math.floor(Math.random() * 15),
+          maxLife: 40,
+          color,
+          size: isStar ? Math.random() * 5 + 3 : Math.random() * 3 + 2,
+          shape: isStar ? 'star' : i % 3 === 0 ? 'spark' : 'circle',
+        });
+      }
+
+      // 5. Billowing Fire & Smoke Puffs
+      const puffCount = intensity === 'massive' ? 6 : 4;
+      for (let s = 0; s < puffCount; s++) {
+        smokePuffsRef.current.push({
+          x: tx + (Math.random() - 0.5) * 16,
+          y: ty + (Math.random() - 0.5) * 16,
+          vx: (Math.random() - 0.5) * 3,
+          vy: -Math.random() * 2 - 0.8,
+          radius: 10 + Math.random() * 8,
+          maxRadius: 35 + Math.random() * 15,
+          alpha: 0.85,
+          color: s % 2 === 0 ? '#f97316' : '#64748b',
+        });
+      }
+    },
+    [applyNaturalCameraShake, spawnComicBanner]
+  );
+
+  // Natural Base Attack Effect (Harmonic directional shake + ground shockwaves + dense dust billows + physical debris + sparks)
+  const triggerBaseAttackEffect = useCallback(
+    (
+      x: number,
+      y: number,
+      impactVx: number,
+      impactVy: number,
+      material: 'cardboard' | 'wood' | 'glass' | 'tnt' | 'ground',
+      severity: 'moderate' | 'heavy' | 'critical' = 'heavy'
+    ) => {
+      // 1. Natural Directional Camera Trauma & Recoil (physically coupled to projectile momentum)
+      const traumaAdd = severity === 'critical' ? 0.95 : severity === 'heavy' ? 0.72 : 0.46;
+      applyNaturalCameraShake(
+        traumaAdd,
+        Math.max(-14, Math.min(14, impactVx * 0.42)),
+        Math.max(-12, Math.min(12, impactVy * 0.38 + 2.5))
+      );
+
+      // 2. Multi-layered Audio Impact
+      if (severity === 'critical') {
+        sfx.playTargetExplosion('heavy');
+      } else {
+        sfx.playImpact('heavy');
+      }
+
+      // 3. Ground Seismic Compression Shockwave Rings (radiating horizontally along foundation)
+      const groundLevel = 420; // standard groundY
+      const ringY = Math.min(groundLevel, Math.max(y, groundLevel - 20));
+      const maxR = severity === 'critical' ? 120 : severity === 'heavy' ? 95 : 70;
+
+      groundShockwavesRef.current.push({
+        id: Math.random(),
+        x,
+        y: ringY,
+        rx: 14,
+        maxRx: maxR,
+        ry: 4,
+        alpha: 1,
+        color: material === 'wood' ? '#d97706' : material === 'glass' ? '#38bdf8' : '#fbbf24',
+        lineWidth: severity === 'critical' ? 4 : 3,
+      });
+
+      groundShockwavesRef.current.push({
+        id: Math.random(),
+        x,
+        y: ringY,
+        rx: 8,
+        maxRx: maxR * 0.65,
+        ry: 3,
+        alpha: 0.9,
+        color: '#ffffff',
+        lineWidth: 2,
+      });
+
+      // 4. Low-Lying Dense Ground Dust Clouds (Billowing horizontally with realistic air friction)
+      const dustPuffCount = severity === 'critical' ? 14 : severity === 'heavy' ? 10 : 6;
+      const dustPalettes = ['#92400e', '#b45309', '#d97706', '#64748b', '#cbd5e1'];
+      for (let s = 0; s < dustPuffCount; s++) {
+        const dir = s % 2 === 0 ? 1 : -1;
+        const speedX = (Math.random() * 5.5 + 2) * dir;
+        const speedY = -Math.random() * 2.2 - 0.4;
+        smokePuffsRef.current.push({
+          x: x + (Math.random() - 0.5) * 20,
+          y: ringY - 2 + (Math.random() - 0.5) * 4,
+          vx: speedX,
+          vy: speedY,
+          radius: 8 + Math.random() * 6,
+          maxRadius: 28 + Math.random() * 12,
+          alpha: 0.85,
+          color: dustPalettes[Math.floor(Math.random() * dustPalettes.length)],
+        });
+      }
+
+      // 5. Natural Physical Debris Splinters & Shards with Gravity & Ground Bounce
+      const debrisCount = severity === 'critical' ? 16 : severity === 'heavy' ? 12 : 7;
+      for (let d = 0; d < debrisCount; d++) {
+        const ang = -Math.PI * 0.15 - Math.random() * Math.PI * 0.7; // Ejected upwards & outward
+        const spd = Math.random() * 9 + 4;
+        const color =
+          material === 'wood'
+            ? ['#b45309', '#d97706', '#78350f', '#f59e0b'][Math.floor(Math.random() * 4)]
+            : material === 'cardboard'
+            ? ['#d97706', '#ca8a04', '#fed7aa'][Math.floor(Math.random() * 3)]
+            : material === 'glass'
+            ? ['#bae6fd', '#7dd3fc', '#ffffff'][Math.floor(Math.random() * 3)]
+            : ['#64748b', '#475569', '#94a3b8'][Math.floor(Math.random() * 3)];
+
+        debrisRef.current.push({
+          x: x + (Math.random() - 0.5) * 12,
+          y: y + (Math.random() - 0.5) * 12,
+          vx: Math.cos(ang) * spd + impactVx * 0.18,
+          vy: Math.sin(ang) * spd,
+          rot: Math.random() * Math.PI * 2,
+          vrot: (Math.random() - 0.5) * 0.45,
+          w: Math.random() * 10 + 4,
+          h: material === 'wood' ? Math.random() * 14 + 5 : Math.random() * 8 + 4,
+          color,
+          alpha: 1,
+          material: material === 'ground' ? 'wood' : material,
+        });
+      }
+
+      // 6. High-Velocity Incandescent Sparks
+      const sparkCount = severity === 'critical' ? 22 : 14;
+      for (let k = 0; k < sparkCount; k++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 10 + 4;
+        particlesRef.current.push({
+          x,
+          y,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd - 1.5,
+          life: 25 + Math.floor(Math.random() * 15),
+          maxLife: 40,
+          color: k % 3 === 0 ? '#ffffff' : k % 3 === 1 ? '#fef08a' : '#f59e0b',
+          size: Math.random() * 4 + 2.5,
+          shape: k % 2 === 0 ? 'spark' : 'star',
+        });
+      }
+
+      // 7. Comic Action Banner Feedback for Base Attack
+      const baseWords =
+        severity === 'critical'
+          ? ['¡¡DERRUMBE DE LA BASE!! 🏗️💥', '¡¡CIMIENTOS COLAPSADOS!! 🔨⚡', '¡¡BASE ANIQUILADA!! 💥']
+          : ['¡¡IMPACTO EN LA BASE!! 💥', '¡¡CIMIENTOS SACUDIDOS!! 🔨', '¡¡ESTRUCTURA INESTABLE!! ⚡'];
+      const chosenWord = baseWords[Math.floor(Math.random() * baseWords.length)];
+      spawnComicBanner(chosenWord, x, y - 30, '#fef08a', '#dc2626');
+
+      floatingScoresRef.current.push({
+        id: Math.random(),
+        x,
+        y: y - 20,
+        text: severity === 'critical' ? '+500 PTS (BASE DESTRUIDA) 💥' : '+300 PTS (DAÑO BASE) 🎯',
+        alpha: 1,
+        color: '#fbbf24',
+      });
+      setScore((s) => s + (severity === 'critical' ? 500 : 300));
+    },
+    [applyNaturalCameraShake, spawnComicBanner]
+  );
 
   const currentLevel = GAME_LEVELS[currentLevelIdx];
 
@@ -356,10 +626,23 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
     comicBannersRef.current = [];
     debrisRef.current = [];
     smokePuffsRef.current = [];
+    explosionsRef.current = [];
+    groundShockwavesRef.current = [];
+    cameraShakeRef.current.trauma = 0;
+    cameraShakeRef.current.impulseX = 0;
+    cameraShakeRef.current.impulseY = 0;
     gumballMoodRef.current = 'idle';
     darwinSpeechRef.current = { text: '¡Apunta a 45° para máximo alcance! 📐', timer: 180 };
     jakeMoodRef.current = 'idle';
     lspSpeechRef.current = { text: '¡45° es el ángulo más grumoso! ✨', timer: 180 };
+
+    // Difficulty scaling:
+    // facil: patrolSpeed = 0 (static targets), wind = 0, enemy hp = 25
+    // medio: patrolSpeed = 1.0, wind = 1.5, enemy hp = 30
+    // dificil: patrolSpeed = 2.4, wind = 3.8, enemy hp = 45, block hp * 1.35
+    const isFacil = difficultyRef.current === 'facil';
+    const isMedio = difficultyRef.current === 'medio';
+    windSpeedRef.current = isFacil ? 0 : isMedio ? 1.5 : 3.8;
 
     // Blocks
     blocksRef.current = lvl.blocks.map((b, i) => {
@@ -378,6 +661,9 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
         maxHp = 10;
         color = '#ef4444';
       }
+      if (!isFacil && !isMedio) {
+        maxHp = Math.round(maxHp * 1.35); // Hard mode sturdier towers
+      }
       return {
         id: i,
         x: b.x,
@@ -395,22 +681,141 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
       };
     });
 
-    // Enemies
-    enemiesRef.current = lvl.enemies.map((e, i) => ({
-      id: i,
-      x: e.x,
-      y: e.y,
-      vx: 0,
-      vy: 0,
-      radius: 17,
-      name: e.name,
-      expression: 'idle',
-      hp: 30,
-      defeated: false,
-      points: 5000,
-      color: e.color,
-    }));
+    // Enemies with dynamic patrol speed & range based on difficulty
+    enemiesRef.current = lvl.enemies.map((e, i) => {
+      const patrolSpeed = isFacil ? 0 : isMedio ? 1.0 + (i % 2) * 0.4 : 2.5 + (i % 2) * 0.7;
+      const patrolRange = isFacil ? 0 : isMedio ? 24 : 46;
+      const hp = isFacil ? 25 : isMedio ? 30 : 45;
+      return {
+        id: i,
+        x: e.x,
+        y: e.y,
+        baseX: e.x,
+        patrolSpeed,
+        patrolRange,
+        vx: 0,
+        vy: 0,
+        radius: 17,
+        name: e.name,
+        expression: 'idle',
+        hp,
+        defeated: false,
+        points: 5000,
+        color: e.color,
+      };
+    });
+
+    // Spawn 1-2 random floating power-up mystery crates with balloons
+    const crateCount = lvl.id === 1 ? 1 : 2;
+    const crates: PowerUpCrateData[] = [];
+    const possibleTypes: PowerUpType[] = ['explosive', 'double_bounce'];
+
+    if (crateCount >= 1) {
+      crates.push({
+        id: 1,
+        x: 350 + Math.floor(Math.random() * 80),
+        y: 160 + Math.floor(Math.random() * 60),
+        baseY: 180,
+        type: possibleTypes[Math.floor(Math.random() * possibleTypes.length)],
+        collected: false,
+        name: 'Caja Misteriosa 1',
+      });
+    }
+    if (crateCount >= 2) {
+      crates.push({
+        id: 2,
+        x: 520 + Math.floor(Math.random() * 70),
+        y: 110 + Math.floor(Math.random() * 50),
+        baseY: 130,
+        type: possibleTypes[Math.floor(Math.random() * possibleTypes.length)],
+        collected: false,
+        name: 'Caja Misteriosa 2',
+      });
+    }
+    powerUpCratesRef.current = crates;
+    setActivePowerUp(null);
   }, [slingshotOrigin.x, slingshotOrigin.y]);
+
+  // Tactical Power-Up Toggle
+  const handleTogglePowerUp = useCallback((type: PowerUpType) => {
+    if (gameState !== 'aiming') return;
+
+    if (activePowerUp === type) {
+      setActivePowerUp(null);
+      sfx.playPop(420);
+      spawnComicBanner('POWER-UP DESEQUIPADO ✖️', slingshotOrigin.x + 80, slingshotOrigin.y - 50, '#e2e8f0', '#475569');
+      return;
+    }
+
+    if (powerUpInventory[type] <= 0) {
+      sfx.playBoing();
+      if (characterDuoRef.current === 'adventure_time') {
+        lspSpeechRef.current = { text: '¡No te quedan de esos bultos! ¡Pégale a una caja flotante o gira la ruleta! 💅', timer: 160 };
+      } else {
+        darwinSpeechRef.current = { text: '¡Sin existencias! Rompe una caja misteriosa flotante o usa la Ruleta 🎲', timer: 160 };
+      }
+      spawnComicBanner('¡SIN EXISTENCIAS! GIRA LA RULETA 🎲', slingshotOrigin.x + 80, slingshotOrigin.y - 50, '#fef08a', '#dc2626');
+      return;
+    }
+
+    setActivePowerUp(type);
+    sfx.playPowerUp();
+    setScreenShake(4);
+
+    if (type === 'explosive') {
+      spawnComicBanner('🔥 PROYECTIL EXPLOSIVO EQUIPADO 💣', slingshotOrigin.x + 80, slingshotOrigin.y - 50, '#fef08a', '#dc2626');
+      if (characterDuoRef.current === 'adventure_time') {
+        lspSpeechRef.current = { text: '¡¡BOMBA K-BOOM LISTA!! ¡DERRÍBALO TODO! 🔥💥', timer: 160 };
+      } else {
+        darwinSpeechRef.current = { text: '¡Ojiva explosiva acoplada! ¡Máximo daño radial! 💣💥', timer: 160 };
+      }
+    } else {
+      spawnComicBanner('⚡ DOBLE REBOTE CINÉTICO EQUIPADO 🌀', slingshotOrigin.x + 80, slingshotOrigin.y - 50, '#e0f2fe', '#0284c7');
+      if (characterDuoRef.current === 'adventure_time') {
+        lspSpeechRef.current = { text: '¡¡ELASTICIDAD SUPREMA!! ¡A REBOTAR POR ENCIMA! ⚡👑', timer: 160 };
+      } else {
+        darwinSpeechRef.current = { text: '¡Conservación de energía elástica activada! ⚡📐', timer: 160 };
+      }
+    }
+  }, [activePowerUp, gameState, powerUpInventory, slingshotOrigin.x, slingshotOrigin.y, spawnComicBanner]);
+
+  // Roll Random Power-Up
+  const handleRollRandomPowerUp = useCallback(() => {
+    sfx.playSparkle();
+    sfx.playPowerUp();
+    const types: PowerUpType[] = ['explosive', 'double_bounce'];
+    const chosen = types[Math.floor(Math.random() * types.length)];
+    setPowerUpInventory((prev) => ({
+      ...prev,
+      [chosen]: prev[chosen] + 1,
+    }));
+    setActivePowerUp(chosen);
+    spawnComicBanner(
+      chosen === 'explosive' ? '🎲 ¡RULETA: +1 PROYECTIL EXPLOSIVO! 💣' : '🎲 ¡RULETA: +1 DOBLE REBOTE! ⚡',
+      425,
+      120,
+      '#fef08a',
+      chosen === 'explosive' ? '#ea580c' : '#0284c7'
+    );
+  }, [spawnComicBanner]);
+
+  const handleDifficultyChange = useCallback((newDiff: 'facil' | 'medio' | 'dificil') => {
+    setDifficulty(newDiff);
+    difficultyRef.current = newDiff;
+    sfx.playPop(newDiff === 'facil' ? 440 : newDiff === 'medio' ? 660 : 880);
+    spawnComicBanner(
+      newDiff === 'facil'
+        ? '🟢 DIFICULTAD FÁCIL: OBJETIVOS FIJOS'
+        : newDiff === 'medio'
+        ? '🟡 DIFICULTAD MEDIA: PATRULLA SUAVE'
+        : '🔴 DIFICULTAD DIFÍCIL: MOVIMIENTO RÁPIDO & VIENTO ⚡',
+      425,
+      120,
+      '#fef08a',
+      newDiff === 'facil' ? '#10b981' : newDiff === 'medio' ? '#f59e0b' : '#ef4444'
+    );
+    initLevel(currentLevelIdx);
+  }, [currentLevelIdx, initLevel, spawnComicBanner]);
 
   const handleRestartLevel = useCallback(() => {
     sfx.playBoing();
@@ -497,7 +902,11 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
     let pvx = vx;
     let pvy = vy;
 
-    for (let i = 0; i < 36; i++) {
+    // Difficulty adjusts the guide trajectory preview length
+    const maxPoints = difficultyRef.current === 'facil' ? 36 : difficultyRef.current === 'medio' ? 20 : 8;
+
+    for (let i = 0; i < maxPoints; i++) {
+      pvx += windSpeedRef.current * dt * 0.45;
       px += pvx * dt * 10;
       py += pvy * dt * 10;
       pvy += gGravity * dt * 2.2; // canvas scale gravity
@@ -528,6 +937,21 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
       active: true,
     };
 
+    // Apply equipped power-up if selected
+    const powerUpToApply = activePowerUpRef.current;
+    if (powerUpToApply) {
+      setPowerUpInventory((prev) => ({
+        ...prev,
+        [powerUpToApply]: Math.max(0, prev[powerUpToApply] - 1),
+      }));
+      setActivePowerUp(null);
+      if (powerUpToApply === 'explosive') {
+        sfx.playLaser(500);
+      } else {
+        sfx.playDoubleBounce();
+      }
+    }
+
     // Create active projectile
     projectileRef.current = {
       x: slingshotOrigin.x,
@@ -536,6 +960,8 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
       vy,
       radius: activeShotType === 'gumball' || activeShotType === 'jake' ? 18 : activeShotType === 'bomb' ? 16 : activeShotType === 'grumosa' ? 16 : 14,
       type: activeShotType,
+      powerUp: powerUpToApply || undefined,
+      bouncesLeft: powerUpToApply === 'double_bounce' ? 2 : undefined,
       inFlight: true,
       hasCollided: false,
       trail: [],
@@ -550,7 +976,11 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
     // High-energy character reactions
     gumballMoodRef.current = 'cheering';
     jakeMoodRef.current = 'cheering';
-    if (isNear45) {
+    if (powerUpToApply === 'explosive') {
+      spawnComicBanner('¡DISPARO EXPLOSIVO! 💣🔥', slingshotOrigin.x + 80, slingshotOrigin.y - 50, '#fef08a', '#dc2626');
+    } else if (powerUpToApply === 'double_bounce') {
+      spawnComicBanner('¡DOBLE REBOTE EN VUELO! ⚡🌀', slingshotOrigin.x + 80, slingshotOrigin.y - 50, '#e0f2fe', '#0284c7');
+    } else if (isNear45) {
       darwinSpeechRef.current = { text: '¡¡45° PERFECTO!! 🎯🚀', timer: 140 };
       lspSpeechRef.current = { text: '¡¡45° EXACTO!! ¡MIS BULTOS ESTÁN EN LLAMAS! ✨🔥', timer: 140 };
       spawnComicBanner('¡45° EXACTO! 🎯', slingshotOrigin.x + 90, slingshotOrigin.y - 70, '#fef08a', '#8b5cf6');
@@ -585,6 +1015,24 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
   const handleMidAirPower = () => {
     if (!projectileRef.current || !projectileRef.current.inFlight) return;
     const p = projectileRef.current;
+
+    // Tactical Mid-Air Power-Up Trigger
+    if (p.powerUp === 'explosive' && !p.exploded) {
+      detonateBomb(p.x, p.y);
+      spawnComicBanner('¡AIR BURST EXPLOSIVO! 💣💥', p.x, p.y - 30, '#fef08a', '#dc2626');
+      p.exploded = true;
+      p.inFlight = false;
+      return;
+    } else if (p.powerUp === 'double_bounce' && (p.bouncesLeft || 0) > 0) {
+      p.bouncesLeft = (p.bouncesLeft || 0) - 1;
+      p.vy = -13;
+      p.vx *= 1.35;
+      sfx.playDoubleBounce();
+      setScreenShake(6);
+      explosionsRef.current.push(createExplosionBurst(p.x, p.y, '#38bdf8', 65, 10));
+      spawnComicBanner('¡IMPULSO CINÉTICO AÉREO! ⚡💨', p.x, p.y - 30, '#e0f2fe', '#0284c7');
+      return;
+    }
 
     if (p.type === 'darwin_split' && !p.hasSplit) {
       p.hasSplit = true;
@@ -727,12 +1175,30 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
 
   // Detonate TNT / Bomb Shockwave
   const detonateBomb = (bx: number, by: number) => {
-    sfx.playImpact('heavy');
-    sfx.playLaser(400);
-    setScreenShake(12);
+    sfx.playTargetExplosion('massive');
+    applyNaturalCameraShake(1.0, (Math.random() - 0.5) * 10, 8);
 
     // Comic Banner
     spawnComicBanner('¡¡KABOOOM!! 🧨💥', bx, by - 40, '#fef08a', '#dc2626');
+
+    // Explosive shockwave rings & cartoon starburst
+    explosionsRef.current.push(createExplosionBurst(bx, by, '#ef4444', 110, 16));
+    explosionsRef.current.push(createExplosionBurst(bx, by, '#facc15', 75, 12));
+
+    // Ground seismic wave if near ground
+    if (by >= 300) {
+      groundShockwavesRef.current.push({
+        id: Math.random(),
+        x: bx,
+        y: 420,
+        rx: 18,
+        maxRx: 130,
+        ry: 5,
+        alpha: 1,
+        color: '#ef4444',
+        lineWidth: 4,
+      });
+    }
 
     // Smoke Puffs
     for (let s = 0; s < 8; s++) {
@@ -790,7 +1256,7 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
       if (dist < shockRadius) {
         en.defeated = true;
         en.expression = 'hit';
-        sfx.playVictoryFanfare();
+        triggerTargetHitExplosion(en.x, en.y, en.color, en.name, 'heavy');
         setScore((s) => s + en.points);
         spawnComicBanner('¡BULLSEYE! 🎯', en.x, en.y - 30, '#fef08a', '#10b981');
         floatingScoresRef.current.push({
@@ -830,13 +1296,22 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
       const tick = animTickRef.current;
 
       // --- UPDATE PHYSICS ---
+      // Dynamic target patrol based on difficulty
+      enemiesRef.current.forEach((en) => {
+        if (!en.defeated && en.patrolSpeed && en.patrolRange && en.baseX !== undefined) {
+          en.x = en.baseX + Math.sin(tick * 0.04 * en.patrolSpeed) * en.patrolRange;
+        }
+      });
+
       const activeProjectiles = [
         ...(projectileRef.current && projectileRef.current.inFlight ? [projectileRef.current] : []),
         ...extraProjectilesRef.current.filter((p) => p.inFlight),
       ];
 
       // Update Projectiles
+      const currentWind = windSpeedRef.current;
       activeProjectiles.forEach((p) => {
+        p.vx += currentWind * dt * 0.45;
         p.vy += gGravity * dt * 2.2 * 10;
         p.x += p.vx * dt * 30;
         p.y += p.vy * dt * 30;
@@ -897,25 +1372,169 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
           });
         }
 
+        // Tactical Power-Up Active Flight Sparks
+        if (p.powerUp === 'explosive' && tick % 2 === 0) {
+          particlesRef.current.push({
+            x: p.x - p.vx * 0.4 + (Math.random() - 0.5) * 6,
+            y: p.y - p.vy * 0.4 + (Math.random() - 0.5) * 6,
+            vx: -p.vx * 0.2 + (Math.random() - 0.5) * 2,
+            vy: -p.vy * 0.2 - Math.random() * 2,
+            life: 20,
+            maxLife: 20,
+            color: Math.random() > 0.4 ? '#ef4444' : '#f59e0b',
+            size: Math.random() * 3.5 + 2,
+            shape: 'spark',
+          });
+        } else if (p.powerUp === 'double_bounce' && tick % 2 === 0) {
+          particlesRef.current.push({
+            x: p.x - p.vx * 0.4 + (Math.random() - 0.5) * 6,
+            y: p.y - p.vy * 0.4 + (Math.random() - 0.5) * 6,
+            vx: -p.vx * 0.2 + (Math.random() - 0.5) * 2,
+            vy: -p.vy * 0.2 + (Math.random() - 0.5) * 2,
+            life: 18,
+            maxLife: 18,
+            color: '#38bdf8',
+            size: 3,
+            shape: 'spark',
+          });
+        }
+
+        // Check Collision with Floating Mystery Power-Up Crates
+        powerUpCratesRef.current.forEach((crate) => {
+          if (crate.collected) return;
+          const hoverOffset = Math.sin(tick * 0.06 + crate.x) * 6;
+          const cy = crate.y + hoverOffset;
+          const dist = Math.hypot(p.x - crate.x, p.y - cy);
+          if (dist < p.radius + 22) {
+            crate.collected = true;
+            sfx.playPowerUp();
+            sfx.playSparkle();
+            setScreenShake(8);
+
+            // Grant power-up immediately to active flying projectile
+            p.powerUp = crate.type;
+            if (crate.type === 'double_bounce') {
+              p.bouncesLeft = 2;
+            }
+
+            // Also grant +1 to inventory
+            setPowerUpInventory((prev) => ({
+              ...prev,
+              [crate.type]: prev[crate.type] + 1,
+            }));
+
+            setScore((s) => s + 1000);
+
+            // Sparkle burst around crate
+            for (let k = 0; k < 24; k++) {
+              particlesRef.current.push({
+                x: crate.x,
+                y: cy,
+                vx: (Math.random() - 0.5) * 8,
+                vy: (Math.random() - 0.5) * 8 - 2,
+                life: 30,
+                maxLife: 30,
+                color: crate.type === 'explosive' ? '#f87171' : '#38bdf8',
+                size: Math.random() * 5 + 3,
+                shape: 'star',
+              });
+            }
+
+            // Shockwave burst
+            explosionsRef.current.push(
+              createExplosionBurst(crate.x, cy, crate.type === 'explosive' ? '#ef4444' : '#06b6d4', 80, 12)
+            );
+
+            // Comic Banner
+            spawnComicBanner(
+              crate.type === 'explosive' ? '¡CAJA EXPLOSIVA ACTIVADA! 💣🔥' : '¡CAJA DOBLE REBOTE! ⚡🌀',
+              crate.x,
+              cy - 35,
+              '#fef08a',
+              crate.type === 'explosive' ? '#dc2626' : '#0284c7'
+            );
+
+            floatingScoresRef.current.push({
+              id: Math.random(),
+              x: crate.x,
+              y: cy - 25,
+              text: `+1000 PTS! ${crate.type === 'explosive' ? '💣' : '⚡'}`,
+              alpha: 1,
+              color: crate.type === 'explosive' ? '#f87171' : '#38bdf8',
+            });
+          }
+        });
+
         // Ground Collision
         if (p.y + p.radius >= groundY) {
           p.y = groundY - p.radius;
-          p.vy = -p.vy * 0.45; // bounce
-          p.vx *= 0.75; // friction
-          p.hasCollided = true;
-          // Dust puff on ground impact
-          smokePuffsRef.current.push({
-            x: p.x,
-            y: groundY - 2,
-            vx: (Math.random() - 0.5) * 2,
-            vy: -1,
-            radius: 8,
-            maxRadius: 22,
-            alpha: 0.6,
-            color: '#cbd5e1',
-          });
-          if (Math.abs(p.vy) < 1 && Math.abs(p.vx) < 1) {
+
+          if (p.powerUp === 'explosive') {
+            detonateBomb(p.x, p.y);
+            spawnComicBanner('¡DETONACIÓN EN TIERRA! 💣💥', p.x, p.y - 30, '#fef08a', '#dc2626');
             p.inFlight = false;
+          } else if (p.powerUp === 'double_bounce' && (p.bouncesLeft || 0) > 0) {
+            p.bouncesLeft = (p.bouncesLeft || 0) - 1;
+            p.vy = -Math.max(Math.abs(p.vy) * 0.95, 14);
+            p.vx = p.vx * 1.15;
+            p.hasCollided = true;
+            sfx.playDoubleBounce();
+            setScreenShake(8);
+
+            explosionsRef.current.push(createExplosionBurst(p.x, groundY - 4, '#38bdf8', 65, 10));
+            spawnComicBanner(
+              p.bouncesLeft === 1 ? '¡REBOTE #1! ⚡' : '¡SUPER DOBLE REBOTE! ⚡🌀',
+              p.x,
+              groundY - 40,
+              '#e0f2fe',
+              '#0284c7'
+            );
+
+            for (let k = 0; k < 15; k++) {
+              particlesRef.current.push({
+                x: p.x,
+                y: groundY - 5,
+                vx: (Math.random() - 0.5) * 6,
+                vy: -Math.random() * 6 - 2,
+                life: 25,
+                maxLife: 25,
+                color: '#38bdf8',
+                size: 3.5,
+                shape: 'spark',
+              });
+            }
+          } else {
+            p.vy = -p.vy * 0.45; // bounce
+            p.vx *= 0.75; // friction
+            p.hasCollided = true;
+
+            // Attack on ground foundation beneath the fortress
+            if (p.x >= 500 && p.x <= 820 && Math.hypot(p.vx, p.vy) > 2.5) {
+              triggerBaseAttackEffect(
+                p.x,
+                groundY,
+                p.vx,
+                p.vy,
+                'ground',
+                Math.hypot(p.vx, p.vy) > 9 ? 'heavy' : 'moderate'
+              );
+            } else {
+              // Dust puff on regular ground impact
+              smokePuffsRef.current.push({
+                x: p.x,
+                y: groundY - 2,
+                vx: (Math.random() - 0.5) * 2,
+                vy: -1,
+                radius: 8,
+                maxRadius: 22,
+                alpha: 0.6,
+                color: '#cbd5e1',
+              });
+            }
+
+            if (Math.abs(p.vy) < 1 && Math.abs(p.vx) < 1) {
+              p.inFlight = false;
+            }
           }
         }
 
@@ -937,40 +1556,100 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
           if (distSq < p.radius * p.radius) {
             // Collision detected!
             p.hasCollided = true;
-            sfx.playImpact('light');
-            const impactForce = Math.hypot(p.vx, p.vy);
+            const isBase = (b.y + b.h >= groundY - 35) || b.y >= 310;
 
-            // Damage block
-            b.hp -= impactForce * 1.5;
-            b.vx += p.vx * 0.35;
-            b.vy += p.vy * 0.25;
-            b.vrot += (p.vx > 0 ? 0.05 : -0.05) * (impactForce / 15);
-
-            // Rebound projectile
-            p.vx *= -0.3;
-            p.vy *= -0.3;
-
-            // Trigger TNT
-            if (b.material === 'tnt' && impactForce > 5) {
+            if (p.powerUp === 'explosive') {
+              detonateBomb(p.x, p.y);
               b.hp = 0;
-              detonateBomb(b.x + b.w / 2, b.y + b.h / 2);
+              spawnComicBanner('¡IMPACTO EXPLOSIVO! 💣💥', p.x, p.y - 30, '#fef08a', '#dc2626');
+              p.inFlight = false;
+              return;
             }
 
-            // Glass shattering
-            if (b.material === 'glass') {
-              sfx.playLaser(1800);
-              for (let k = 0; k < 8; k++) {
+            if (p.powerUp === 'double_bounce' && (p.bouncesLeft || 0) > 0) {
+              p.bouncesLeft = (p.bouncesLeft || 0) - 1;
+              const impactForce = Math.hypot(p.vx, p.vy);
+              b.hp -= impactForce * 2.5;
+              b.vx += p.vx * 0.45;
+              b.vy += p.vy * 0.35;
+              p.vx = -p.vx * 0.95;
+              p.vy = -Math.max(Math.abs(p.vy) * 0.9, 11);
+              sfx.playDoubleBounce();
+
+              if (isBase) {
+                triggerBaseAttackEffect(closestX, closestY, p.vx, p.vy, b.material, 'heavy');
+              } else {
+                applyNaturalCameraShake(0.65, p.vx * 0.25, p.vy * 0.2);
+              }
+
+              explosionsRef.current.push(createExplosionBurst(p.x, p.y, '#38bdf8', 60, 10));
+              spawnComicBanner('¡RICOCHET CINÉTICO! ⚡', p.x, p.y - 30, '#e0f2fe', '#0284c7');
+              for (let k = 0; k < 12; k++) {
                 particlesRef.current.push({
-                  x: closestX,
-                  y: closestY,
-                  vx: (Math.random() - 0.5) * 6,
-                  vy: (Math.random() - 0.5) * 6,
-                  life: 20,
-                  maxLife: 20,
-                  color: '#7dd3fc',
-                  size: 2.5,
+                  x: p.x,
+                  y: p.y,
+                  vx: (Math.random() - 0.5) * 7,
+                  vy: (Math.random() - 0.5) * 7,
+                  life: 25,
+                  maxLife: 25,
+                  color: '#facc15',
+                  size: 3,
                   shape: 'spark',
                 });
+              }
+            } else {
+              const impactForce = Math.hypot(p.vx, p.vy);
+
+              // Damage block
+              b.hp -= impactForce * 1.5;
+              b.vx += p.vx * 0.35;
+              b.vy += p.vy * 0.25;
+              b.vrot += (p.vx > 0 ? 0.05 : -0.05) * (impactForce / 15);
+
+              // Check if base was attacked vs upper structure
+              if (isBase) {
+                triggerBaseAttackEffect(
+                  closestX,
+                  closestY,
+                  p.vx,
+                  p.vy,
+                  b.material,
+                  impactForce > 14 ? 'critical' : impactForce > 8 ? 'heavy' : 'moderate'
+                );
+              } else {
+                sfx.playImpact('light');
+                applyNaturalCameraShake(0.35, p.vx * 0.22, p.vy * 0.18);
+                // Upper structure splinter fragments
+                const frags = spawnDebrisExplosion(closestX, closestY, 14, 14, b.material, b.color);
+                debrisRef.current.push(...frags.slice(0, 4));
+              }
+
+              // Rebound projectile
+              p.vx *= -0.3;
+              p.vy *= -0.3;
+
+              // Trigger TNT
+              if (b.material === 'tnt' && impactForce > 5) {
+                b.hp = 0;
+                detonateBomb(b.x + b.w / 2, b.y + b.h / 2);
+              }
+
+              // Glass shattering
+              if (b.material === 'glass') {
+                sfx.playLaser(1800);
+                for (let k = 0; k < 12; k++) {
+                  particlesRef.current.push({
+                    x: closestX,
+                    y: closestY,
+                    vx: (Math.random() - 0.5) * 7,
+                    vy: (Math.random() - 0.5) * 7,
+                    life: 22,
+                    maxLife: 22,
+                    color: '#7dd3fc',
+                    size: 2.8,
+                    shape: 'spark',
+                  });
+                }
               }
             }
           }
@@ -984,16 +1663,34 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
             // Defeated!
             en.defeated = true;
             en.expression = 'hit';
-            sfx.playImpact('heavy');
-            sfx.playPop(900);
-            setScore((s) => s + en.points);
 
+            if (p.powerUp === 'explosive') {
+              detonateBomb(p.x, p.y);
+              spawnComicBanner('¡MEGA BOOM DIRECTO! 💣💥', en.x, en.y - 30, '#fef08a', '#dc2626');
+              p.inFlight = false;
+            } else if (p.powerUp === 'double_bounce' && (p.bouncesLeft || 0) > 0) {
+              p.bouncesLeft = (p.bouncesLeft || 0) - 1;
+              triggerTargetHitExplosion(en.x, en.y, en.color, en.name, 'heavy');
+              sfx.playDoubleBounce();
+              spawnComicBanner('¡IMPACTO Y REBOTE! ⚡🎯', en.x, en.y - 30, '#fef08a', '#10b981');
+              p.vx = p.vx * 0.85;
+              p.vy = -Math.max(Math.abs(p.vy) * 0.75, 8);
+            } else {
+              // SYNCHRONIZED EXPLOSION & PARTICLE BURST WITH ZERO-LATENCY IMPACT AUDIO
+              triggerTargetHitExplosion(
+                en.x,
+                en.y,
+                en.color,
+                en.name,
+                p.type === 'bomb' ? 'massive' : 'heavy'
+              );
+              p.vx *= 0.5;
+              p.vy *= 0.5;
+            }
+
+            setScore((s) => s + en.points);
             gumballMoodRef.current = 'cheering';
             jakeMoodRef.current = 'cheering';
-            darwinSpeechRef.current = { text: '¡¡DIRECTO AL BLANCO!! 🎯🔥', timer: 140 };
-            lspSpeechRef.current = { text: '¡¡LOS HICISTE PURÉ GRUMOSO!! 💜💥', timer: 140 };
-            spawnComicBanner(characterDuoRef.current === 'adventure_time' ? '¡¡BULLSEYE DE JAKE!! 🐶🎯' : '¡BULLSEYE! 🎯', en.x, en.y - 30, '#fef08a', '#10b981');
-
             floatingScoresRef.current.push({
               id: Math.random(),
               x: en.x,
@@ -1002,24 +1699,6 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
               alpha: 1,
               color: '#34d399',
             });
-
-            // Particles
-            for (let i = 0; i < 20; i++) {
-              particlesRef.current.push({
-                x: en.x,
-                y: en.y,
-                vx: (Math.random() - 0.5) * 8,
-                vy: (Math.random() - 0.5) * 8 - 2,
-                life: 30,
-                maxLife: 30,
-                color: en.color,
-                size: Math.random() * 5 + 2,
-                shape: 'star',
-              });
-            }
-
-            p.vx *= 0.5;
-            p.vy *= 0.5;
           }
         });
       });
@@ -1030,6 +1709,19 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
           if (!b.destroyed) {
             b.destroyed = true;
             setScore((s) => s + 250);
+            const isBase = (b.y + b.h >= groundY - 35) || b.y >= 310;
+            if (isBase) {
+              triggerBaseAttackEffect(
+                b.x + b.w / 2,
+                b.y + b.h / 2,
+                b.vx,
+                b.vy,
+                b.material,
+                'critical'
+              );
+            } else {
+              applyNaturalCameraShake(0.45, b.vx * 0.2, b.vy * 0.2);
+            }
             const frags = spawnDebrisExplosion(b.x + b.w / 2, b.y + b.h / 2, b.w, b.h, b.material, b.color);
             debrisRef.current.push(...frags);
             smokePuffsRef.current.push({
@@ -1088,6 +1780,23 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
       });
       smokePuffsRef.current = smokePuffsRef.current.filter((sp) => sp.alpha > 0);
 
+      // Update Animated Explosion Bursts
+      explosionsRef.current.forEach((exp) => {
+        exp.life -= 1;
+        exp.rotation += exp.vrot;
+        exp.alpha = exp.life / exp.maxLife;
+        exp.flashAlpha = Math.max(0, exp.flashAlpha - 0.07);
+      });
+      explosionsRef.current = explosionsRef.current.filter((exp) => exp.life > 0);
+
+      // Update Ground Compression Seismic Shockwaves
+      groundShockwavesRef.current.forEach((gs) => {
+        gs.rx += (gs.maxRx - gs.rx) * 0.18;
+        gs.ry += 0.22;
+        gs.alpha -= 0.042;
+      });
+      groundShockwavesRef.current = groundShockwavesRef.current.filter((gs) => gs.alpha > 0);
+
       // Update Comic Banners
       comicBannersRef.current.forEach((cb) => {
         cb.life -= 1;
@@ -1136,7 +1845,7 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
           ) {
             en.defeated = true;
             en.expression = 'hit';
-            sfx.playImpact('heavy');
+            triggerTargetHitExplosion(en.x, en.y, en.color, en.name, 'heavy');
             setScore((s) => s + en.points);
             spawnComicBanner('¡APLASTADO! 💥', en.x, en.y - 30, '#fef08a', '#dc2626');
             floatingScoresRef.current.push({
@@ -1244,12 +1953,37 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
 
       const confettiColors = ['#ec4899', '#3b82f6', '#eab308', '#10b981', '#a855f7', '#f97316'];
 
-      // Camera shake offset
+      // --- NATURAL CAMERA SHAKE WITH HARMONIC SPRING OSCILLATION, DIRECTIONAL RECOIL & ANGULAR ROLL ---
       ctx.save();
-      if (screenShake > 0) {
-        const sx = (Math.random() - 0.5) * screenShake * 3;
-        const sy = (Math.random() - 0.5) * screenShake * 3;
-        ctx.translate(sx, sy);
+      const cShake = cameraShakeRef.current;
+      const effectiveTrauma = Math.max(cShake.trauma, screenShake / 12);
+      if (effectiveTrauma > 0.002) {
+        // Quadratic trauma curve for natural punchy impact and smooth roll-off
+        const intensity = Math.pow(effectiveTrauma, 1.8);
+        const maxOffset = 18; // maximum pixel jolt
+        const maxAngle = 0.022; // maximum radian roll (~1.3 degrees)
+
+        // Damped harmonic multi-frequency oscillation
+        const primaryOsc = Math.sin(animTickRef.current * 0.45);
+        const secondaryOsc = Math.cos(animTickRef.current * 0.82);
+        const highFreqNoise = (Math.sin(animTickRef.current * 1.7) + Math.cos(animTickRef.current * 2.3)) * 0.5;
+
+        // Directional recoil + harmonic spring response
+        const sx = Math.max(-maxOffset, Math.min(maxOffset, (cShake.impulseX * primaryOsc + highFreqNoise * 3.5) * intensity));
+        const sy = Math.max(-maxOffset, Math.min(maxOffset, (cShake.impulseY * secondaryOsc + highFreqNoise * 3.5) * intensity));
+        const roll = (Math.sin(animTickRef.current * 0.38) * 0.75 + highFreqNoise * 0.25) * maxAngle * intensity;
+
+        // Apply roll rotation around canvas center + translation
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        ctx.translate(cx, cy);
+        ctx.rotate(roll);
+        ctx.translate(-cx + sx, -cy + sy);
+
+        // Frame-rate smooth physics decay
+        cShake.trauma = Math.max(0, cShake.trauma - cShake.decayRate);
+        cShake.impulseX *= 0.91;
+        cShake.impulseY *= 0.91;
       }
 
       // 1. DYNAMIC BACKGROUND (Treehouse at Sunset or Bedroom)
@@ -1332,6 +2066,13 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
           ctx.arc(fx, groundY + 9, 1.6, 0, Math.PI * 2);
           ctx.fill();
         }
+
+        // Draw animated Adventure Time cliff pedestal, swaying sunflowers, smiling daisy and wind indicator
+        drawSceneryElements(ctx, tick, windSpeedRef.current, currentLevelIdx >= 1);
+        drawAnimatedSun(ctx, tick, 760, 68);
+        drawAnimatedBirds(ctx, tick);
+        drawAnimatedWindLeavesAndPetals(ctx, tick, windSpeedRef.current, groundY);
+        drawAnimatedButterflies(ctx, tick, activeProjectiles);
         ctx.restore();
       } else {
         // --- CLASSIC ELMORE BEDROOM BACKGROUND ---
@@ -1347,6 +2088,12 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
 
         // Animated Chromatic Pulse Rainbow
         drawAnimatedRainbow(ctx, tick);
+
+        // Animated Sun in window
+        drawAnimatedSun(ctx, tick, 760, 68);
+        drawAnimatedBirds(ctx, tick);
+        drawAnimatedWindLeavesAndPetals(ctx, tick, windSpeedRef.current, groundY);
+        drawAnimatedButterflies(ctx, tick, activeProjectiles);
 
         // Confetti on the floor
         ctx.save();
@@ -1447,6 +2194,9 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
         drawAnimatedDarwin(ctx, tick, targetForDarwin, darwinSpeechRef.current.text, darwinSpeechRef.current.timer);
       }
 
+      // 4.5. FLOATING MYSTERY POWER-UP CRATES & BALLOONS
+      drawPowerUpCrates(ctx, powerUpCratesRef.current, tick);
+
       // 5. ANIMATED SLINGSHOT & DAMPED ELASTIC BANDS
       drawSlingshotAndBands(
         ctx,
@@ -1468,6 +2218,11 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
         ctx.scale(pouchScale, pouchScale);
         drawProjectileIcon(ctx, activeShotType, 14);
         ctx.restore();
+
+        // If a power-up is equipped, render glowing animated aura around projectile in pocket!
+        if (activePowerUp) {
+          drawPowerUpAura(ctx, curDrag.x, curDrag.y, 16, activePowerUp, tick);
+        }
 
         // Parabolic Trajectory Guide Line (Rainbow sparkles like in image!)
         const trajectory = getTrajectoryPoints();
@@ -1511,11 +2266,13 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
           ctx.fill();
         });
 
-        ctx.save();
-        ctx.translate(p.x, p.y);
-        ctx.rotate(p.rotation || 0);
-        drawProjectileIcon(ctx, p.type, p.radius);
-        ctx.restore();
+        // Draw Animated In-Flight Projectile (Aerodynamic Squash & Stretch, screaming faces, flapping ears, spinning tails)
+        drawAnimatedInFlightProjectile(ctx, p, tick);
+
+        // Render Power-Up Aura around active flying projectile!
+        if (p.powerUp) {
+          drawPowerUpAura(ctx, p.x, p.y, p.radius, p.powerUp, tick);
+        }
       });
 
       // 7. Render Blocks with Stress Cracks when damaged
@@ -1588,19 +2345,64 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
         drawAnimatedEnemy(ctx, en, tick, isThreatened);
       });
 
+      // 9B. Render Ground Compression Shockwaves (Seismic Base Attack Waves)
+      groundShockwavesRef.current.forEach((gs) => {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, gs.alpha);
+        ctx.beginPath();
+        ctx.ellipse(gs.x, gs.y, gs.rx, gs.ry, 0, 0, Math.PI * 2);
+        ctx.strokeStyle = gs.color;
+        ctx.lineWidth = gs.lineWidth;
+        ctx.shadowColor = gs.color;
+        ctx.shadowBlur = 14;
+        ctx.stroke();
+        ctx.restore();
+      });
+
       // 10. Render Smoke & Dust Puffs
       drawSmokePuffs(ctx, smokePuffsRef.current);
 
-      // 11. Render Comic Action Banners ("¡KABOOM!", "¡45° EXACTO!", etc.)
-      drawComicBanners(ctx, comicBannersRef.current);
+      // 10B. Render Dynamic Explosion Shockwaves & Comic Starbursts
+      drawExplosionBursts(ctx, explosionsRef.current);
 
-      // 12. Render Particles
+      // 11. Render Particles (Stars with rotation, radiant sparks, and glowing dots)
       particlesRef.current.forEach((pt) => {
         ctx.save();
+        const alpha = Math.max(0, pt.life / pt.maxLife);
         ctx.fillStyle = pt.color;
-        ctx.globalAlpha = pt.life / pt.maxLife;
+        ctx.globalAlpha = alpha;
+
         if (pt.shape === 'star') {
-          ctx.fillRect(pt.x - pt.size / 2, pt.y - pt.size / 2, pt.size, pt.size);
+          // Dynamic comic rotating star with black outline for vibrant pop
+          ctx.translate(pt.x, pt.y);
+          ctx.rotate(pt.life * 0.12 + pt.x);
+          const r = pt.size;
+          ctx.beginPath();
+          for (let s = 0; s < 5; s++) {
+            const a = (s * Math.PI * 2) / 5;
+            const sx = Math.cos(a) * r;
+            const sy = Math.sin(a) * r;
+            if (s === 0) ctx.moveTo(sx, sy);
+            else ctx.lineTo(sx, sy);
+            const inA = a + Math.PI / 5;
+            ctx.lineTo(Math.cos(inA) * (r * 0.45), Math.sin(inA) * (r * 0.45));
+          }
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        } else if (pt.shape === 'spark') {
+          // Brilliant diamond spark
+          ctx.translate(pt.x, pt.y);
+          const s = pt.size * 1.3;
+          ctx.beginPath();
+          ctx.moveTo(0, -s);
+          ctx.lineTo(s * 0.45, 0);
+          ctx.lineTo(0, s);
+          ctx.lineTo(-s * 0.45, 0);
+          ctx.closePath();
+          ctx.fill();
         } else {
           ctx.beginPath();
           ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2);
@@ -1608,6 +2410,14 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
         }
         ctx.restore();
       });
+
+      // 12. Render Comic Action Banners ("¡BOOOM!", "¡45° EXACTO!", etc.)
+      drawComicBanners(ctx, comicBannersRef.current);
+
+      // 12.5 Full-Canvas Animated Celebration for Level Clear (Swirling ribbons, confetti & stars)
+      if (gameState === 'cleared') {
+        drawFullCanvasCelebration(ctx, tick, canvas.width, canvas.height);
+      }
 
       // 13. Floating Scores
       floatingScoresRef.current.forEach((fs) => {
@@ -2101,17 +2911,30 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
         </div>
       </header>
 
-      {/* 2. STATS & DARWIN'S 45° TELEMETRY BAR */}
+      {/* 2. STATS, DIFFICULTY SELECTOR, LIVES & RESTART BAR */}
       <div className="w-full max-w-5xl bg-[#0f172a] border-3 border-black rounded-2xl p-2.5 shadow-[4px_4px_0px_#000] mb-2 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
-        {/* Level & Shots */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        {/* Level, Shots & Lives */}
+        <div className="flex flex-wrap items-center gap-2">
           <div className="bg-purple-900/80 px-2.5 py-1 rounded-xl border border-purple-400 text-purple-200 font-black">
             {currentLevel.name.split(':')[0]}
           </div>
 
+          {/* Lives Indicator & Button */}
+          <button
+            onClick={() => {
+              sfx.playSparkle();
+              setShowLivesModal(true);
+            }}
+            className="px-2.5 py-1 bg-rose-950/90 hover:bg-rose-900 border-2 border-rose-500 rounded-xl text-xs font-black text-rose-200 flex items-center gap-1.5 shadow-[2px_2px_0px_#000] cursor-pointer transition-all active:scale-95"
+            title="Vidas del jugador. Haz clic para gestionar o recargar vidas"
+          >
+            <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-400 animate-pulse" />
+            <span>{lives}/3 VIDAS</span>
+          </button>
+
           <div className="flex items-center gap-1 text-pink-300 font-black">
-            <span>DISPAROS:</span>
-            <div className="flex items-center gap-1">
+            <span className="hidden sm:inline">TIROS:</span>
+            <div className="flex items-center gap-0.5">
               {Array.from({ length: shotsLeft }).map((_, i) => (
                 <span key={i} className="text-base animate-bounce" style={{ animationDelay: `${i * 150}ms` }}>
                   🐰
@@ -2121,33 +2944,171 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
           </div>
         </div>
 
+        {/* Difficulty Selector (Fácil, Medio, Difícil) */}
+        <div className="flex items-center gap-1 bg-black/60 p-1 rounded-xl border-2 border-slate-700">
+          <span className="text-[10px] font-mono font-bold text-slate-400 px-1 hidden md:inline">DIFICULTAD:</span>
+          {(['facil', 'medio', 'dificil'] as const).map((diff) => (
+            <button
+              key={diff}
+              onClick={() => handleDifficultyChange(diff)}
+              className={`px-2 py-0.5 rounded-lg text-[11px] font-black uppercase transition-all cursor-pointer ${
+                difficulty === diff
+                  ? diff === 'facil'
+                    ? 'bg-emerald-400 text-black shadow-[2px_2px_0px_#000]'
+                    : diff === 'medio'
+                    ? 'bg-amber-400 text-black shadow-[2px_2px_0px_#000]'
+                    : 'bg-red-500 text-white shadow-[2px_2px_0px_#000]'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title={
+                diff === 'facil'
+                  ? 'Fácil: Objetivos fijos sin viento y guía balística amplia'
+                  : diff === 'medio'
+                  ? 'Medio: Objetivos con patrulla suave y viento balanceado'
+                  : 'Difícil: Objetivos rápidos, viento fuerte y torres blindadas'
+              }
+            >
+              {diff === 'facil' ? '🟢 FÁCIL' : diff === 'medio' ? '🟡 MEDIO' : '🔴 DIFÍCIL'}
+            </button>
+          ))}
+        </div>
+
         {/* Darwin's 45° Optimal Angle HUD Indicator */}
-        <div className={`flex items-center gap-2 px-3 py-1 rounded-xl border-2 transition-all font-bold ${
+        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl border-2 transition-all font-bold ${
           isNear45
             ? 'bg-amber-400 text-black border-yellow-300 shadow-[0_0_15px_rgba(250,204,21,0.8)] animate-pulse'
             : 'bg-black/60 text-slate-300 border-slate-700'
         }`}>
-          <Sparkles className="w-4 h-4 text-orange-600 fill-current" />
-          <span>ÁNGULO: {liveAngleDeg}°</span>
-          <span className="text-[10px]">
-            {isNear45 ? '🎯 ¡ÓPTIMO DE DARWIN! (R = v₀²/g)' : `(Meta: 45°)`}
+          <Sparkles className="w-3.5 h-3.5 text-orange-600 fill-current" />
+          <span>{liveAngleDeg}°</span>
+          <span className="text-[10px] hidden sm:inline">
+            {isNear45 ? '🎯 ÓPTIMO 45°' : `(Meta: 45°)`}
           </span>
         </div>
 
-        {/* Score & Highscore */}
-        <div className="flex items-center gap-3">
+        {/* Score & Restart Button */}
+        <div className="flex items-center gap-2">
+          {/* Quick-test Base Attack Button */}
+          <button
+            onClick={() => {
+              triggerBaseAttackEffect(640, 410, 18, 8, 'wood', 'heavy');
+            }}
+            className="px-2.5 py-1 bg-red-600 hover:bg-red-500 border-2 border-black text-white font-black text-xs uppercase rounded-xl shadow-[2px_2px_0px_#000] flex items-center gap-1 cursor-pointer transition-all active:translate-x-0.5 active:translate-y-0.5"
+            title="Probar inmediatamente el efecto natural de temblor (shake) y partículas al atacar la base"
+          >
+            <Sparkles className="w-3.5 h-3.5 fill-current" />
+            <span>💥 PROBAR BASE</span>
+          </button>
+
           <div className="flex items-center gap-1 text-amber-300 font-black">
-            <Trophy className="w-4 h-4 text-yellow-400" />
-            <span>PUNTOS: {score}</span>
+            <Trophy className="w-3.5 h-3.5 text-yellow-400" />
+            <span>{score}</span>
           </div>
-          <div className="text-slate-400 text-[10px] hidden sm:block">
-            RÉCORD: {highScore}
+
+          <button
+            onClick={handleRestartLevel}
+            className="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 border-2 border-black text-white font-black text-xs uppercase rounded-xl shadow-[2px_2px_0px_#000] flex items-center gap-1 cursor-pointer transition-all active:translate-x-0.5 active:translate-y-0.5"
+            title="Reiniciar este nivel con los mismos parámetros"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">REINICIAR</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 2.5. TACTICAL POWER-UPS DOCK (STRATEGIC ENHANCEMENTS) */}
+      <div className="w-full max-w-5xl bg-[#101a33]/90 border-4 border-black rounded-3xl p-2.5 sm:p-3 shadow-[6px_6px_0px_#000] mb-3 backdrop-blur-md">
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
+          {/* Power-Up Action Buttons */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1 text-[11px] font-mono font-black text-amber-300 uppercase pr-1 border-r-2 border-slate-700 hidden sm:flex">
+              <Zap className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
+              <span>POWER-UPS:</span>
+            </div>
+
+            {/* Explosive Projectile Button */}
+            <button
+              onClick={() => handleTogglePowerUp('explosive')}
+              className={`px-3 py-1.5 rounded-2xl border-3 border-black font-black text-xs uppercase shadow-[3px_3px_0px_#000] flex items-center gap-2 cursor-pointer transition-all active:translate-x-0.5 active:translate-y-0.5 ${
+                activePowerUp === 'explosive'
+                  ? 'bg-gradient-to-r from-red-600 to-orange-500 text-white ring-4 ring-yellow-400/80 animate-pulse scale-[1.03]'
+                  : powerUpInventory.explosive > 0
+                  ? 'bg-gradient-to-r from-red-950/80 to-slate-900 hover:from-red-900/90 text-red-200 border-red-500/60'
+                  : 'bg-slate-900/60 text-slate-500 border-slate-800'
+              }`}
+              title="Ojiva Explosiva: Detonación radial que arrasa bloques y derriba enemigos en un radio de 120px"
+            >
+              <div className="w-6 h-6 rounded-xl bg-red-600 border-2 border-black flex items-center justify-center text-sm shadow-[1px_1px_0px_#000]">
+                💣
+              </div>
+              <div className="text-left">
+                <div className="flex items-center gap-1.5 leading-tight">
+                  <span className="font-extrabold tracking-tight">EXPLOSIVO</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/70 text-amber-300 border border-red-400">
+                    x{powerUpInventory.explosive}
+                  </span>
+                </div>
+                <div className="text-[9px] font-mono font-bold text-red-300 opacity-90 hidden md:block">
+                  {activePowerUp === 'explosive' ? '🔥 ¡EQUIPADO PARA ESTE TIRO!' : 'Detonación K-Boom (120px)'}
+                </div>
+              </div>
+            </button>
+
+            {/* Double Bounce Kinetic Button */}
+            <button
+              onClick={() => handleTogglePowerUp('double_bounce')}
+              className={`px-3 py-1.5 rounded-2xl border-3 border-black font-black text-xs uppercase shadow-[3px_3px_0px_#000] flex items-center gap-2 cursor-pointer transition-all active:translate-x-0.5 active:translate-y-0.5 ${
+                activePowerUp === 'double_bounce'
+                  ? 'bg-gradient-to-r from-cyan-600 to-blue-500 text-white ring-4 ring-cyan-300/80 animate-pulse scale-[1.03]'
+                  : powerUpInventory.double_bounce > 0
+                  ? 'bg-gradient-to-r from-cyan-950/80 to-slate-900 hover:from-cyan-900/90 text-cyan-200 border-cyan-500/60'
+                  : 'bg-slate-900/60 text-slate-500 border-slate-800'
+              }`}
+              title="Doble Rebote Cinético: 2 rebotes supersónicos con impulso reactivo para saltar sobre murallas"
+            >
+              <div className="w-6 h-6 rounded-xl bg-cyan-600 border-2 border-black flex items-center justify-center text-sm shadow-[1px_1px_0px_#000]">
+                ⚡
+              </div>
+              <div className="text-left">
+                <div className="flex items-center gap-1.5 leading-tight">
+                  <span className="font-extrabold tracking-tight">DOBLE REBOTE</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/70 text-cyan-300 border border-cyan-400">
+                    x{powerUpInventory.double_bounce}
+                  </span>
+                </div>
+                <div className="text-[9px] font-mono font-bold text-cyan-300 opacity-90 hidden md:block">
+                  {activePowerUp === 'double_bounce' ? '⚡ ¡EQUIPADO PARA ESTE TIRO!' : '2 Saltos Supersónicos'}
+                </div>
+              </div>
+            </button>
+
+            {/* Random Power-Up Roulette Button */}
+            <button
+              onClick={handleRollRandomPowerUp}
+              className="px-2.5 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black border-3 border-black font-black text-[11px] uppercase rounded-2xl shadow-[3px_3px_0px_#000] flex items-center gap-1.5 cursor-pointer transition-all active:translate-x-0.5 active:translate-y-0.5"
+              title="Gira la ruleta para obtener un power-up aleatorio sorpresa"
+            >
+              <Dices className="w-4 h-4 stroke-[2.5]" />
+              <span>RULETA 🎲</span>
+            </button>
+          </div>
+
+          {/* Floating Mystery Crate Tip */}
+          <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold text-slate-300 bg-black/40 px-2.5 py-1 rounded-xl border border-slate-700/60">
+            <span className="text-sm animate-bounce">🎈</span>
+            <span>¡Dispara a las Cajas Flotantes para activar power-ups y ganar +1000 PTS!</span>
           </div>
         </div>
       </div>
 
       {/* 3. MAIN GAMEPLAY STAGE (HTML5 CANVAS) */}
-      <div className="relative w-full max-w-5xl aspect-[17/9] bg-black border-4 border-black rounded-3xl overflow-hidden shadow-[8px_8px_0px_#000] group">
+      <div
+        className={`relative w-full max-w-5xl aspect-[17/9] bg-black border-4 border-black rounded-3xl overflow-hidden transition-shadow duration-150 group ${
+          screenShake > 4
+            ? 'shadow-[0_0_35px_rgba(245,158,11,0.7),8px_8px_0px_#000]'
+            : 'shadow-[8px_8px_0px_#000]'
+        }`}
+      >
         <canvas
           ref={canvasRef}
           width={850}
@@ -2157,6 +3118,11 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
           onPointerUp={handlePointerUp}
           className="w-full h-full block cursor-crosshair touch-none"
         />
+
+        {/* Natural Base Impact Vignette Flash */}
+        {screenShake > 4 && (
+          <div className="absolute inset-0 pointer-events-none z-20 bg-amber-500/15 mix-blend-screen transition-opacity duration-150 animate-pulse" />
+        )}
 
         {/* Instructional Floating Toast on Aiming */}
         {gameState === 'aiming' && (
@@ -2247,28 +3213,83 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
           </div>
         )}
 
-        {/* DEFEAT OVERLAY */}
+        {/* DEFEAT OVERLAY (LOST A LIFE) */}
         {gameState === 'defeat' && (
           <div className="absolute inset-0 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-fade-in z-20">
-            <div className="w-16 h-16 rounded-3xl bg-red-600 border-4 border-black flex items-center justify-center text-3xl shadow-[4px_4px_0px_#000] mb-3">
-              💥
+            <div className="w-16 h-16 rounded-3xl bg-amber-500 border-4 border-black flex items-center justify-center text-3xl shadow-[4px_4px_0px_#000] mb-3">
+              💔
             </div>
-            <h2 className="text-3xl sm:text-4xl font-black uppercase text-red-400 drop-shadow-[2px_2px_0px_#000] mb-2">
-              ¡TE QUEDASTE SIN MUNICIÓN!
+            <h2 className="text-3xl sm:text-4xl font-black uppercase text-yellow-400 drop-shadow-[2px_2px_0px_#000] mb-1">
+              ¡TIRO FALLIDO!
             </h2>
-            <p className="font-mono text-sm text-slate-300 mb-6 max-w-md">
-              Aún quedan objetivos en pie. Ajusta el ángulo a 45° para maximizar el alcance y derribar la base de la torre.
+            <div className="flex items-center gap-1.5 text-rose-300 font-mono font-bold text-sm mb-3">
+              <span>Perdiste 1 vida • Te quedan:</span>
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Heart
+                  key={i}
+                  className={`w-5 h-5 ${i < lives ? 'fill-rose-500 text-rose-400' : 'text-slate-600'}`}
+                />
+              ))}
+            </div>
+            <p className="font-mono text-xs text-slate-300 mb-6 max-w-md">
+              Aún quedan fortalezas en pie. Recuerda que el ángulo óptimo para el máximo alcance es 45° (R = v₀²/g).
             </p>
-            <button
-              onClick={() => {
-                sfx.playPop();
-                initLevel(currentLevelIdx);
-              }}
-              className="px-6 py-3 bg-yellow-400 hover:bg-yellow-300 border-4 border-black text-black font-black text-sm uppercase rounded-2xl shadow-[5px_5px_0px_#000] flex items-center gap-2 cursor-pointer transition-all active:translate-x-0.5 active:translate-y-0.5"
-            >
-              <RotateCcw className="w-5 h-5 stroke-[3]" />
-              <span>REINTENTAR NIVEL 🎯</span>
-            </button>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <button
+                onClick={handleRestartLevel}
+                className="px-5 py-3 bg-yellow-400 hover:bg-yellow-300 border-4 border-black text-black font-black text-xs uppercase rounded-2xl shadow-[4px_4px_0px_#000] flex items-center gap-2 cursor-pointer transition-all active:translate-x-0.5 active:translate-y-0.5"
+              >
+                <RotateCcw className="w-4 h-4 stroke-[3]" />
+                <span>REINTENTAR NIVEL 🎯</span>
+              </button>
+              <button
+                onClick={() => {
+                  handleRechargeLives();
+                  handleRestartLevel();
+                }}
+                className="px-5 py-3 bg-pink-500 hover:bg-pink-400 border-4 border-black text-white font-black text-xs uppercase rounded-2xl shadow-[4px_4px_0px_#000] flex items-center gap-2 cursor-pointer transition-all active:translate-x-0.5 active:translate-y-0.5"
+              >
+                <Heart className="w-4 h-4 fill-white" />
+                <span>RECARGAR 3 VIDAS ❤️</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* GAME OVER OVERLAY (LIVES = 0) */}
+        {gameState === 'game_over' && (
+          <div className="absolute inset-0 bg-black/90 backdrop-blur-lg flex flex-col items-center justify-center p-6 text-center animate-fade-in z-30">
+            <div className="w-20 h-20 rounded-3xl bg-red-600 border-4 border-black flex items-center justify-center text-4xl shadow-[5px_5px_0px_#000] mb-3 animate-pulse">
+              💀
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-black uppercase text-red-500 drop-shadow-[3px_3px_0px_#000] mb-1">
+              ¡JUEGO TERMINADO!
+            </h2>
+            <p className="font-mono text-sm text-rose-300 mb-2 font-bold">
+              Te has quedado sin vidas (0/3 ❤️).
+            </p>
+            <p className="font-mono text-xs text-slate-300 mb-6 max-w-md">
+              Puedes recargar tus corazones para seguir jugando desde este nivel o reiniciar tu aventura desde el Nivel 1.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <button
+                onClick={() => {
+                  handleRechargeLives();
+                  handleRestartLevel();
+                }}
+                className="px-6 py-3 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-400 hover:to-pink-400 border-4 border-black text-white font-black text-sm uppercase rounded-2xl shadow-[5px_5px_0px_#000] flex items-center gap-2 cursor-pointer transition-all hover:scale-105 active:translate-x-0.5 active:translate-y-0.5"
+              >
+                <Heart className="w-5 h-5 fill-current text-white animate-bounce" />
+                <span>RECUPERAR 3 VIDAS Y CONTINUAR 💖</span>
+              </button>
+              <button
+                onClick={handleFullRestart}
+                className="px-5 py-3 bg-slate-800 hover:bg-slate-700 border-3 border-black text-white font-black text-xs uppercase rounded-2xl shadow-[4px_4px_0px_#000] flex items-center gap-2 cursor-pointer transition-all active:translate-x-0.5 active:translate-y-0.5"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>REINICIAR DESDE NIVEL 1 🔄</span>
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -2673,6 +3694,84 @@ export const AngryGumballGame: React.FC<AngryGumballGameProps> = ({
                   <code className="text-pink-300 font-bold">H_max = (v₀ · sen(θ))² / (2g)</code>
                 </p>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 7. MODAL: LIVES MANAGEMENT & RECHARGE */}
+      {showLivesModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-fade-in">
+          <div className="relative w-full max-w-md bg-[#10172a] border-4 border-rose-500 rounded-3xl p-5 sm:p-6 shadow-[10px_10px_0px_#000] text-white font-mono text-center">
+            <button
+              onClick={() => setShowLivesModal(false)}
+              className="absolute top-4 right-4 w-9 h-9 bg-rose-500 hover:bg-rose-400 text-white font-black text-lg rounded-xl border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_#000] cursor-pointer transition-all"
+            >
+              ✕
+            </button>
+
+            <div className="w-14 h-14 mx-auto rounded-2xl bg-rose-950 border-3 border-rose-500 flex items-center justify-center mb-3">
+              <Heart className="w-8 h-8 fill-rose-500 text-rose-400 animate-pulse" />
+            </div>
+
+            <h3 className="text-xl font-black text-rose-300 uppercase mb-2">
+              SISTEMA DE VIDAS
+            </h3>
+
+            {/* Current Lives Display */}
+            <div className="flex items-center justify-center gap-3 my-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`w-12 h-12 rounded-2xl border-3 border-black flex items-center justify-center transition-all ${
+                    i < lives ? 'bg-rose-600 shadow-[3px_3px_0px_#000] scale-105' : 'bg-slate-800 opacity-60'
+                  }`}
+                >
+                  <Heart
+                    className={`w-7 h-7 ${
+                      i < lives ? 'fill-white text-white' : 'text-slate-600'
+                    }`}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <p className="text-xs text-slate-300 mb-5">
+              Tienes <strong>{lives} de 3 vidas</strong> disponibles. Si agotas tus tiros sin destruir todos los objetivos, perderás 1 vida. ¡Al llegar a 0 vidas será Game Over!
+            </p>
+
+            <div className="space-y-2.5">
+              <button
+                onClick={() => {
+                  handleRechargeLives();
+                  setShowLivesModal(false);
+                }}
+                className="w-full py-3 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white font-black text-xs uppercase rounded-2xl border-3 border-black shadow-[4px_4px_0px_#000] flex items-center justify-center gap-2 cursor-pointer transition-all active:translate-x-0.5 active:translate-y-0.5"
+              >
+                <Heart className="w-4 h-4 fill-white" />
+                <span>RECARGAR A 3 VIDAS AHORA ❤️</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  handleRestartLevel();
+                  setShowLivesModal(false);
+                }}
+                className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase rounded-2xl border-3 border-black shadow-[3px_3px_0px_#000] flex items-center justify-center gap-2 cursor-pointer transition-all active:translate-x-0.5 active:translate-y-0.5"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>REINICIAR ESTE NIVEL 🔄</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  handleFullRestart();
+                  setShowLivesModal(false);
+                }}
+                className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs uppercase rounded-xl border-2 border-slate-600 flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+              >
+                <span>REINICIAR TODO EL JUEGO (NIVEL 1)</span>
+              </button>
             </div>
           </div>
         </div>

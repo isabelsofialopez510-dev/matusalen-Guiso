@@ -63,6 +63,7 @@ import { PixelGumball, PixelDarwin, PixelAnais, PixelPenny, PixelTrioBanner } fr
 import { PsychedelicIntroScreen } from './components/PsychedelicIntroScreen';
 import { WeirdPhysicsStory } from './components/WeirdPhysicsStory';
 import { AngryGumballGame } from './components/AngryGumballGame';
+import { World3ImpactParticles } from './components/World3ImpactParticles';
 import { sfx } from './utils/audioEffects';
 import {
   getLorentzFactor,
@@ -98,6 +99,33 @@ export interface RaceRecord {
   timeDiff: number;
   marginDistance: number;
 }
+
+// Variants para la transición de entrada (fade-in, scale-up) del visor principal de la simulación al cambiar de worldMode
+const simulationViewerVariants = {
+  hidden: {
+    opacity: 0,
+    scale: 0.94,
+    y: 12,
+  },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: {
+      duration: 0.38,
+      ease: [0.22, 1, 0.36, 1], // Curva fluida y viva
+    },
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.97,
+    y: -8,
+    transition: {
+      duration: 0.18,
+      ease: 'easeIn',
+    },
+  },
+};
 
 export default function App() {
   // --- Navigation Screen State ---
@@ -182,12 +210,39 @@ export default function App() {
 
   // --- World 3 (Caída Libre Gumball vs Darwin / Roca vs Moneda) State ---
   const [ffHeight, setFfHeight] = useState<number>(50); // meters
+  const [ffDifficulty, setFfDifficulty] = useState<'facil' | 'medio' | 'dificil'>('medio');
   const [ffVacuum, setFfVacuum] = useState<boolean>(false); // false = Con Aire (1 atm), true = Vacío (0 Pa)
   const [ffGravity, setFfGravity] = useState<number>(9.81); // m/s^2
   const [ffRockMass, setFfRockMass] = useState<number>(5.0); // 5 kg (Gumball)
   const [ffCoinMass, setFfCoinMass] = useState<number>(0.005); // 5 g = 0.005 kg (Darwin)
   const [w3CharacterType, setW3CharacterType] = useState<'gumball_darwin' | 'classic'>('gumball_darwin');
   const [w3ShowStepByStep, setW3ShowStepByStep] = useState<boolean>(true);
+
+  // --- World 3 Ground Impact Animation & Screen Shake State ---
+  const [w3RockImpactKey, setW3RockImpactKey] = useState<number>(0);
+  const [w3CoinImpactKey, setW3CoinImpactKey] = useState<number>(0);
+  const [w3ScreenShake, setW3ScreenShake] = useState<{
+    active: boolean;
+    intensity: 'heavy' | 'light';
+    key: number;
+  }>({ active: false, intensity: 'heavy', key: 0 });
+
+  const triggerWorld3Impact = (type: 'rock' | 'coin') => {
+    const now = Date.now();
+    if (type === 'rock') {
+      setW3RockImpactKey(now);
+      setW3ScreenShake({ active: true, intensity: 'heavy', key: now });
+      setTimeout(() => {
+        setW3ScreenShake((prev) => (prev.key === now ? { ...prev, active: false } : prev));
+      }, 450);
+    } else {
+      setW3CoinImpactKey(now);
+      setW3ScreenShake({ active: true, intensity: 'light', key: now });
+      setTimeout(() => {
+        setW3ScreenShake((prev) => (prev.key === now ? { ...prev, active: false } : prev));
+      }, 300);
+    }
+  };
 
   // --- World 3 Long Distance Traveled State ---
   const [hallwayDist, setHallwayDist] = useState<number>(1000); // Distance range L in meters (100m to 3000m)
@@ -291,6 +346,23 @@ export default function App() {
     w2LoggedRunRef.current = false;
     w3RockLandedRef.current = false;
     w3CoinLandedRef.current = false;
+    setW3RockImpactKey(0);
+    setW3CoinImpactKey(0);
+    setW3ScreenShake({ active: false, intensity: 'heavy', key: 0 });
+  };
+
+  // Handler for World 3 (Caída Libre) difficulty adjustment
+  const handleFfDifficultyChange = (diff: 'facil' | 'medio' | 'dificil') => {
+    setFfDifficulty(diff);
+    sfx.playLaser(diff === 'facil' ? 800 : diff === 'medio' ? 1200 : 1600);
+    if (diff === 'facil') {
+      setFfHeight(25); // Fácil: menor altura, caída rápida didáctica
+    } else if (diff === 'medio') {
+      setFfHeight(50); // Medio: altura estándar de 50 metros
+    } else {
+      setFfHeight(120); // Difícil: gran altura, mayor tiempo de caída y aceleración terminal
+    }
+    resetSimulation();
   };
 
   // Toggle Play / Pause with dynamic SFX
@@ -656,16 +728,18 @@ export default function App() {
     v_term: coinRes.vTerm || 999,
   };
 
-  // World 3 Impact Sound Detection Effect
+  // World 3 Impact Sound, Particles & Screen Shake Detection Effect
   useEffect(() => {
     if (worldMode !== 'world3') return;
     if (w3Rock.impacted && !w3RockLandedRef.current && tGround > 0.05) {
       w3RockLandedRef.current = true;
       sfx.playImpact('heavy');
+      triggerWorld3Impact('rock');
     }
     if (w3Coin.impacted && !w3CoinLandedRef.current && tGround > 0.05) {
       w3CoinLandedRef.current = true;
       sfx.playImpact('light');
+      triggerWorld3Impact('coin');
     }
   }, [w3Rock.impacted, w3Coin.impacted, worldMode, tGround]);
 
@@ -2060,12 +2134,20 @@ export default function App() {
             </div>
           </section>
 
-          {/* RIGHT VIEWPORT AREA: DEDICATED SIMULATORS FOR WORLD 1, WORLD 2, AND WORLD 3 */}
-          <section className="lg:col-span-3 space-y-6">
-
-            {/* ========================================================================= */}
-            {/* WORLD 2: SIMULADOR INTERACTIVO DE MUA Y MRU EN PISTA HORIZONTAL           */}
-            {/* ========================================================================= */}
+          {/* RIGHT VIEWPORT AREA: DEDICATED SIMULATORS FOR WORLD 1, WORLD 2, WORLD 3, AND WORLD 4 */}
+          <section className="lg:col-span-3 space-y-6 min-w-0">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={worldMode}
+                variants={simulationViewerVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                className="space-y-6 w-full"
+              >
+                {/* ========================================================================= */}
+                {/* WORLD 2: SIMULADOR INTERACTIVO DE MUA Y MRU EN PISTA HORIZONTAL           */}
+                {/* ========================================================================= */}
             {worldMode === 'world2' && (
               <div className="space-y-6">
                 {/* Header Control Panel */}
@@ -2803,20 +2885,66 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {/* Difficulty Selector for Caída Libre */}
+                      <div className="flex items-center gap-1 bg-[#030712] p-1 rounded border-2 border-amber-500/60 font-mono">
+                        <span className="text-[10px] font-bold text-amber-300 px-1 hidden lg:inline">DIFICULTAD:</span>
+                        {(['facil', 'medio', 'dificil'] as const).map((diff) => (
+                          <button
+                            key={diff}
+                            onClick={() => handleFfDifficultyChange(diff)}
+                            className={`px-2 py-0.5 rounded text-[10px] font-black uppercase transition-all cursor-pointer ${
+                              ffDifficulty === diff
+                                ? diff === 'facil'
+                                  ? 'bg-emerald-400 text-black shadow-[0_0_8px_#34d399]'
+                                  : diff === 'medio'
+                                  ? 'bg-amber-400 text-black shadow-[0_0_8px_#fbbf24]'
+                                  : 'bg-red-500 text-white shadow-[0_0_8px_#ef4444]'
+                                : 'text-slate-400 hover:text-white'
+                            }`}
+                            title={
+                              diff === 'facil'
+                                ? 'Fácil: Altura baja de 25m, caída rápida y controlada'
+                                : diff === 'medio'
+                                ? 'Medio: Altura clásica de 50m, balance didáctico'
+                                : 'Difícil: Altura extrema de 120m, alta velocidad terminal y mayor desafío'
+                            }
+                          >
+                            {diff === 'facil' ? '🟢 FÁCIL (25m)' : diff === 'medio' ? '🟡 MEDIO (50m)' : '🔴 DIFÍCIL (120m)'}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Immediate Screen Shake & Particles Test Button */}
+                      <button
+                        onClick={() => {
+                          sfx.playImpact('heavy');
+                          triggerWorld3Impact('rock');
+                          setTimeout(() => {
+                            sfx.playImpact('light');
+                            triggerWorld3Impact('coin');
+                          }, 250);
+                        }}
+                        className="px-3 py-2 bg-red-600/90 hover:bg-red-500 text-white font-mono text-[10px] font-black uppercase rounded border border-red-300 shadow-[0_0_12px_rgba(239,68,68,0.6)] flex items-center gap-1.5 transition-all cursor-pointer"
+                        title="Probar inmediatamente la animación de partículas y vibración de pantalla (shake)"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>💥 Probar Shake & Partículas</span>
+                      </button>
+
                       <button
                         onClick={() => setIsPlaying(!isPlaying)}
-                        className={`px-4 py-2 border-2 font-black text-xs uppercase shadow-[0_0_12px_rgba(251,191,36,0.4)] flex items-center gap-2 transition-all ${
+                        className={`px-4 py-2 border-2 font-black text-xs uppercase shadow-[0_0_12px_rgba(251,191,36,0.4)] flex items-center gap-2 transition-all cursor-pointer ${
                           isPlaying ? 'bg-amber-400 text-[#141414] border-amber-300 hover:bg-amber-500' : 'bg-[#00E5FF] text-[#0b0e1b] border-cyan-300 hover:bg-cyan-300'
                         }`}
                       >
                         {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
-                        <span>{isPlaying ? 'Pausar Simulación' : 'Iniciar Simulación'}</span>
+                        <span>{isPlaying ? 'Pausar' : 'Iniciar'}</span>
                       </button>
 
                       <button
                         onClick={resetSimulation}
-                        className="px-4 py-2 bg-[#1e293b] hover:bg-slate-700 text-amber-200 font-bold text-xs uppercase border-2 border-amber-400 flex items-center gap-2 transition-all"
+                        className="px-4 py-2 bg-[#1e293b] hover:bg-slate-700 text-amber-200 font-bold text-xs uppercase border-2 border-amber-400 flex items-center gap-2 transition-all cursor-pointer"
                       >
                         <RotateCcw className="w-4 h-4" />
                         <span>Reiniciar</span>
@@ -2862,8 +2990,36 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* SVG Vertical Drop Towers */}
-                <div className="border-4 bg-[#030712] border-amber-400 shadow-[0_0_25px_rgba(251,191,36,0.35)] flex flex-col overflow-hidden relative rounded-lg">
+                {/* SVG Vertical Drop Towers with Screen Shake animation */}
+                <motion.div
+                  key={`w3-drop-tower-shake-${w3ScreenShake.key}`}
+                  animate={
+                    w3ScreenShake.active
+                      ? w3ScreenShake.intensity === 'heavy'
+                        ? {
+                            x: [0, -11, 11, -8, 8, -5, 5, -2, 2, 0],
+                            y: [0, 9, -9, 7, -7, 4, -4, 2, -1, 0],
+                            rotate: [0, -1.3, 1.3, -0.9, 0.9, -0.4, 0.4, 0],
+                          }
+                        : {
+                            x: [0, -5, 5, -3, 3, -1, 1, 0],
+                            y: [0, 3, -3, 2, -2, 1, -1, 0],
+                            rotate: [0, -0.5, 0.5, -0.2, 0.2, 0],
+                          }
+                      : { x: 0, y: 0, rotate: 0 }
+                  }
+                  transition={{
+                    duration: w3ScreenShake.intensity === 'heavy' ? 0.45 : 0.3,
+                    ease: 'easeInOut',
+                  }}
+                  className={`border-4 bg-[#030712] border-amber-400 flex flex-col overflow-hidden relative rounded-lg transition-shadow duration-200 ${
+                    w3ScreenShake.active && w3ScreenShake.intensity === 'heavy'
+                      ? 'shadow-[0_0_40px_rgba(239,68,68,0.9),inset_0_0_20px_rgba(239,68,68,0.45)]'
+                      : w3ScreenShake.active
+                        ? 'shadow-[0_0_30px_rgba(251,191,36,0.85),inset_0_0_15px_rgba(251,191,36,0.35)]'
+                        : 'shadow-[0_0_25px_rgba(251,191,36,0.35)]'
+                  }`}
+                >
                   <div className="px-4 py-2 bg-[#0b0e1b] text-amber-300 border-b-2 border-amber-400 flex items-center justify-between font-mono text-xs">
                     <span className="font-bold uppercase tracking-wider text-amber-300 flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
@@ -2891,6 +3047,19 @@ export default function App() {
                       className="absolute inset-0 w-full h-full object-cover opacity-65 pointer-events-none select-none"
                     />
                     <div className="absolute inset-0 bg-gradient-to-b from-[#02040a]/50 via-transparent to-[#02040a]/75 pointer-events-none" />
+
+                    {/* Visual Screen Shake Flash / Vignette Pulse */}
+                    {w3ScreenShake.active && (
+                      <motion.div
+                        key={`shake-flash-${w3ScreenShake.key}`}
+                        initial={{ opacity: w3ScreenShake.intensity === 'heavy' ? 0.35 : 0.18 }}
+                        animate={{ opacity: 0 }}
+                        transition={{ duration: 0.28 }}
+                        className={`absolute inset-0 pointer-events-none z-30 ${
+                          w3ScreenShake.intensity === 'heavy' ? 'bg-red-600/30' : 'bg-amber-400/20'
+                        }`}
+                      />
+                    )}
 
                     <svg viewBox={`0 0 ${W_VIEW} ${H_VIEW}`} className="w-full h-full select-none relative z-10">
                       <defs>
@@ -3264,6 +3433,21 @@ export default function App() {
                           );
                         })()}
                       </g>
+                      {/* IMPACT PARTICLES ANIMATIONS (FRAMER-MOTION) */}
+                      <World3ImpactParticles
+                        type="rock"
+                        x={260}
+                        y={H_VIEW - 50}
+                        impactKey={w3RockImpactKey}
+                        characterType={w3CharacterType}
+                      />
+                      <World3ImpactParticles
+                        type="coin"
+                        x={640}
+                        y={H_VIEW - 50}
+                        impactKey={w3CoinImpactKey}
+                        characterType={w3CharacterType}
+                      />
                     </svg>
 
                     {/* Ground Impact Banner Overlay */}
@@ -3276,7 +3460,7 @@ export default function App() {
                       </div>
                     )}
                   </div>
-                </div>
+                </motion.div>
 
                 {/* Real-time Freefall Speed Chart */}
                 <div className="bg-[#0b0e1b] border-2 border-amber-400/80 p-4 rounded-lg space-y-2">
@@ -3917,6 +4101,8 @@ export default function App() {
               </div>
             )}
 
+              </motion.div>
+            </AnimatePresence>
           </section>
         </div>
 

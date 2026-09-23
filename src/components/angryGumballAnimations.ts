@@ -49,6 +49,160 @@ export interface SlingshotElastic {
   active: boolean;
 }
 
+export interface ExplosionRing {
+  radius: number;
+  maxRadius: number;
+  color: string;
+  width: number;
+}
+
+export interface ExplosionBurst {
+  id: number;
+  x: number;
+  y: number;
+  radius: number;
+  maxRadius: number;
+  alpha: number;
+  life: number;
+  maxLife: number;
+  color: string;
+  innerColor: string;
+  spikes: number;
+  rotation: number;
+  vrot: number;
+  flashAlpha: number;
+  rings: ExplosionRing[];
+}
+
+// Factory helper to spawn a high-impact comic explosion burst
+export function createExplosionBurst(
+  x: number,
+  y: number,
+  color: string = '#facc15',
+  maxRadius: number = 72,
+  spikes: number = 14
+): ExplosionBurst {
+  return {
+    id: Math.random(),
+    x,
+    y,
+    radius: 8,
+    maxRadius,
+    alpha: 1,
+    life: 30,
+    maxLife: 30,
+    color,
+    innerColor: '#fef08a',
+    spikes,
+    rotation: Math.random() * Math.PI * 2,
+    vrot: (Math.random() - 0.5) * 0.16,
+    flashAlpha: 1.0,
+    rings: [
+      { radius: 6, maxRadius: maxRadius * 1.35, color: '#fef08a', width: 5 },
+      { radius: 4, maxRadius: maxRadius * 1.6, color, width: 3.5 },
+    ],
+  };
+}
+
+// Render dynamic animated explosion bursts with comic starburst and shockwave rings
+export function drawExplosionBursts(ctx: CanvasRenderingContext2D, explosions: ExplosionBurst[]): void {
+  explosions.forEach((exp) => {
+    const progress = 1 - exp.life / exp.maxLife; // 0 to 1
+    const currentRadius = exp.radius + (exp.maxRadius - exp.radius) * Math.sin(progress * Math.PI * 0.5);
+
+    ctx.save();
+    ctx.translate(exp.x, exp.y);
+
+    // 1. Central White-Hot Flare Flash (intense light at detonation moment)
+    if (exp.flashAlpha > 0.04) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(0, 0, currentRadius * 0.75, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.globalAlpha = Math.min(1, exp.flashAlpha * 0.95);
+      ctx.shadowColor = exp.color;
+      ctx.shadowBlur = 24;
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // 2. Luminous Expanding Shockwave Rings
+    exp.rings.forEach((ring) => {
+      const rProgress = Math.min(1, progress * 1.3);
+      const ringR = ring.radius + (ring.maxRadius - ring.radius) * rProgress;
+      const ringAlpha = Math.max(0, (1 - rProgress) * exp.alpha);
+      if (ringAlpha > 0.02) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(0, 0, ringR, 0, Math.PI * 2);
+        ctx.strokeStyle = ring.color;
+        ctx.lineWidth = Math.max(1.2, (1 - rProgress) * ring.width);
+        ctx.globalAlpha = ringAlpha;
+        ctx.shadowColor = ring.color;
+        ctx.shadowBlur = 12;
+        ctx.stroke();
+        ctx.restore();
+      }
+    });
+
+    // 3. Comic Action Blast Starburst (POW! / BOOM! jagged spikes)
+    ctx.save();
+    ctx.rotate(exp.rotation);
+    ctx.globalAlpha = exp.alpha;
+
+    const pts = exp.spikes * 2;
+    const outerR = currentRadius;
+    const innerR = currentRadius * 0.44;
+
+    // Outer Starburst shape
+    ctx.fillStyle = exp.color;
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 3.5;
+    ctx.lineJoin = 'miter';
+    ctx.beginPath();
+    for (let i = 0; i < pts; i++) {
+      const a = (i * Math.PI) / exp.spikes;
+      const r = i % 2 === 0 ? outerR * (0.85 + ((i % 4) * 0.07)) : innerR;
+      const sx = Math.cos(a) * r;
+      const sy = Math.sin(a) * r;
+      if (i === 0) ctx.moveTo(sx, sy);
+      else ctx.lineTo(sx, sy);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Inner Contrasting Fire Star
+    const coreOuterR = currentRadius * 0.58;
+    const coreInnerR = currentRadius * 0.24;
+    ctx.fillStyle = exp.innerColor;
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i < pts; i++) {
+      const a = (i * Math.PI) / exp.spikes;
+      const r = i % 2 === 0 ? coreOuterR : coreInnerR;
+      const sx = Math.cos(a) * r;
+      const sy = Math.sin(a) * r;
+      if (i === 0) ctx.moveTo(sx, sy);
+      else ctx.lineTo(sx, sy);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Hot Center Core
+    ctx.beginPath();
+    ctx.arc(0, 0, currentRadius * 0.22, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+
+    ctx.restore();
+
+    ctx.restore();
+  });
+}
+
 // 1. ANIMATED CLOUDS & SKY ATMOSPHERE
 export function drawAnimatedClouds(ctx: CanvasRenderingContext2D, tick: number): void {
   ctx.save();
@@ -656,28 +810,79 @@ export function drawSlingshotAndBands(
   ctx.fillRect(origin.x - 6 + forkVibX, origin.y, 12, 85);
   ctx.strokeRect(origin.x - 6 + forkVibX, origin.y, 12, 85);
 
-  // Slingshot Fork
+  // Slingshot Fork with flex under tension
+  const dist = isDragging ? Math.hypot(dragPos.x - origin.x, dragPos.y - origin.y) : 0;
+  const tensionRatio = Math.min(1, dist / 110);
+  const flexX = isDragging ? (dragPos.x - origin.x) * 0.06 : 0;
+  const flexY = isDragging ? (dragPos.y - origin.y) * 0.06 : 0;
+
   ctx.beginPath();
-  ctx.moveTo(origin.x - 16 + forkVibX, origin.y - 18);
+  ctx.moveTo(origin.x - 16 + forkVibX + flexX, origin.y - 18 + flexY);
   ctx.lineTo(origin.x - 4 + forkVibX, origin.y);
   ctx.lineTo(origin.x + 4 + forkVibX, origin.y);
-  ctx.lineTo(origin.x + 16 + forkVibX, origin.y - 18);
+  ctx.lineTo(origin.x + 16 + forkVibX + flexX, origin.y - 18 + flexY);
   ctx.stroke();
 
   // Rubber Bands
-  const forkLeft = { x: origin.x - 14 + forkVibX, y: origin.y - 15 };
-  const forkRight = { x: origin.x + 14 + forkVibX, y: origin.y - 15 };
+  const forkLeft = { x: origin.x - 14 + forkVibX + flexX, y: origin.y - 15 + flexY };
+  const forkRight = { x: origin.x + 14 + forkVibX + flexX, y: origin.y - 15 + flexY };
 
   if (isDragging) {
-    // Fully stretched tension band
-    ctx.strokeStyle = '#dc2626';
-    ctx.lineWidth = 4.5;
+    // Fully stretched tension band with dynamic tension color (red to electric orange)
+    ctx.strokeStyle = tensionRatio > 0.8 ? '#ea580c' : '#dc2626';
+    ctx.lineWidth = 4.5 + Math.sin(tick * 0.3) * 0.6;
     ctx.beginPath();
     ctx.moveTo(forkLeft.x, forkLeft.y);
     ctx.lineTo(dragPos.x, dragPos.y);
     ctx.moveTo(dragPos.x, dragPos.y);
     ctx.lineTo(forkRight.x, forkRight.y);
     ctx.stroke();
+
+    // Electrical tension sparks vibrating along the rubber bands!
+    if (dist > 35) {
+      const sparkCount = Math.floor(tensionRatio * 5) + 1;
+      for (let s = 0; s < sparkCount; s++) {
+        const t = (s + 0.5) / sparkCount;
+        const jx = (Math.random() - 0.5) * 5;
+        const jy = (Math.random() - 0.5) * 5;
+        const spkX = forkLeft.x + (dragPos.x - forkLeft.x) * t + jx;
+        const spkY = forkLeft.y + (dragPos.y - forkLeft.y) * t + jy;
+
+        ctx.save();
+        ctx.fillStyle = s % 2 === 0 ? '#facc15' : '#ffffff';
+        ctx.beginPath();
+        ctx.arc(spkX, spkY, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // High Tension Aura at Max Power
+    if (tensionRatio > 0.8) {
+      ctx.save();
+      ctx.translate(dragPos.x, dragPos.y);
+      ctx.rotate(tick * 0.1);
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.arc(0, 0, 18 + Math.sin(tick * 0.4) * 3, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+
+      // Comic Tension Banner Badge
+      ctx.save();
+      ctx.fillStyle = '#fef08a';
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 2.5;
+      ctx.font = '900 10px monospace';
+      ctx.textAlign = 'center';
+      const badgeY = dragPos.y - 24 + Math.sin(tick * 0.2) * 2;
+      ctx.strokeText('⚡ MAX POTENCIA ⚡', dragPos.x, badgeY);
+      ctx.fillText('⚡ MAX POTENCIA ⚡', dragPos.x, badgeY);
+      ctx.restore();
+    }
 
     // Leather Pouch
     ctx.fillStyle = '#78350f';
@@ -1461,4 +1666,1130 @@ export function drawAnimatedLumpyPrincess(
 
   ctx.restore();
 }
+
+// 12. SCENERY PROPS (Cliff platforms, swaying sunflowers, daisies and terrain layers inspired by classic physics catapult art)
+export function drawSceneryElements(
+  ctx: CanvasRenderingContext2D,
+  tick: number,
+  windSpeed = 0,
+  hasRightCliff = true
+): void {
+  ctx.save();
+
+  // Left Slingshot Cliff Pillar (elevated earth platform)
+  ctx.fillStyle = '#451a03'; // Dark rich soil
+  ctx.strokeStyle = '#1c0a00';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.rect(0, 345, 145, 105);
+  ctx.fill();
+  ctx.stroke();
+
+  // Soil holes/rocky circular texture on cliff
+  ctx.fillStyle = '#290f02';
+  const soilHoles = [
+    { x: 30, y: 375, r: 7 },
+    { x: 75, y: 365, r: 10 },
+    { x: 110, y: 385, r: 8 },
+    { x: 45, y: 415, r: 11 },
+    { x: 90, y: 420, r: 7 },
+  ];
+  soilHoles.forEach((h) => {
+    ctx.beginPath();
+    ctx.arc(h.x, h.y, h.r, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Grass cap on left cliff
+  ctx.fillStyle = '#65a30d';
+  ctx.strokeStyle = '#14532d';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(0, 345);
+  for (let x = 0; x <= 145; x += 12) {
+    const wave = Math.sin(x * 0.3) * 3;
+    ctx.lineTo(x, 345 + wave);
+  }
+  ctx.lineTo(145, 355);
+  ctx.lineTo(0, 355);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Right Cliff Plateau / Stepped Bedrock (like in the reference photo)
+  if (hasRightCliff) {
+    ctx.fillStyle = '#3e1d08';
+    ctx.strokeStyle = '#1c0a00';
+    ctx.lineWidth = 3;
+
+    // Stepped rocky embankment on right side
+    ctx.beginPath();
+    ctx.moveTo(740, 420);
+    ctx.lineTo(740, 260); // step up
+    ctx.lineTo(850, 260);
+    ctx.lineTo(850, 420);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Secondary lower step
+    ctx.beginPath();
+    ctx.moveTo(690, 420);
+    ctx.lineTo(690, 335);
+    ctx.lineTo(740, 335);
+    ctx.lineTo(740, 420);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Bedrock holes
+    ctx.fillStyle = '#261103';
+    [
+      { x: 770, y: 290, r: 9 },
+      { x: 815, y: 310, r: 11 },
+      { x: 790, y: 360, r: 8 },
+      { x: 715, y: 375, r: 7 },
+    ].forEach((h) => {
+      ctx.beginPath();
+      ctx.arc(h.x, h.y, h.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Grass on cliff top
+    ctx.fillStyle = '#65a30d';
+    ctx.fillRect(738, 258, 114, 6);
+    ctx.fillRect(688, 333, 54, 6);
+  }
+
+  // Swaying Sunflowers (🌻) with physics wind reaction
+  const sunflowers = [
+    { x: 165, y: 420, h: 42, size: 16 },
+    { x: 380, y: 420, h: 36, size: 14 },
+    { x: 505, y: 420, h: 48, size: 18 },
+    { x: 820, y: 260, h: 38, size: 15 }, // On top of the cliff!
+  ];
+
+  sunflowers.forEach((sf, i) => {
+    ctx.save();
+    const windTilt = (windSpeed * 0.08) + Math.sin(tick * 0.06 + i * 2) * 0.12;
+    ctx.translate(sf.x, sf.y);
+
+    // Stalk
+    ctx.strokeStyle = '#22c55e';
+    ctx.lineWidth = 3.5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    const topX = Math.sin(windTilt) * sf.h;
+    const topY = -Math.cos(windTilt) * sf.h;
+    ctx.quadraticCurveTo(topX * 0.4, topY * 0.5, topX, topY);
+    ctx.stroke();
+
+    // Green leaf
+    ctx.fillStyle = '#16a34a';
+    ctx.beginPath();
+    ctx.ellipse(topX * 0.5 + 6, topY * 0.5, 7, 3, 0.4 + windTilt, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Flower head at top
+    ctx.translate(topX, topY);
+    ctx.rotate(windTilt * 0.8);
+
+    // Golden petals
+    ctx.fillStyle = '#f59e0b';
+    for (let p = 0; p < 10; p++) {
+      const ang = (p * Math.PI * 2) / 10;
+      const px = Math.cos(ang) * (sf.size * 0.7);
+      const py = Math.sin(ang) * (sf.size * 0.7);
+      ctx.beginPath();
+      ctx.arc(px, py, sf.size * 0.35, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Brown center disk
+    ctx.fillStyle = '#78350f';
+    ctx.strokeStyle = '#451a03';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(0, 0, sf.size * 0.42, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Little seeds texture
+    ctx.fillStyle = '#92400e';
+    ctx.beginPath();
+    ctx.arc(-1, -1, 1.5, 0, Math.PI * 2);
+    ctx.arc(2, 1, 1.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  });
+
+  // White Daisies scattered along the meadow grass
+  const daisies = [
+    { x: 195, y: 422 },
+    { x: 260, y: 424 },
+    { x: 330, y: 421 },
+    { x: 440, y: 423 },
+    { x: 700, y: 422 },
+  ];
+  daisies.forEach((d) => {
+    ctx.save();
+    ctx.translate(d.x, d.y);
+    ctx.fillStyle = '#ffffff';
+    for (let p = 0; p < 5; p++) {
+      const a = (p * Math.PI * 2) / 5;
+      ctx.beginPath();
+      ctx.arc(Math.cos(a) * 4, Math.sin(a) * 4, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#eab308';
+    ctx.beginPath();
+    ctx.arc(0, 0, 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  });
+
+  ctx.restore();
+}
+
+// 13. POWER-UP FLOATING MYSTERY CRATES & BALLOONS
+export interface PowerUpCrateData {
+  id: number;
+  x: number;
+  y: number;
+  baseY: number;
+  type: 'explosive' | 'double_bounce';
+  collected: boolean;
+  name: string;
+}
+
+export function drawPowerUpCrates(
+  ctx: CanvasRenderingContext2D,
+  crates: PowerUpCrateData[],
+  tick: number
+): void {
+  crates.forEach((crate) => {
+    if (crate.collected) return;
+    const hoverOffset = Math.sin(tick * 0.06 + crate.x) * 6;
+    const cx = crate.x;
+    const cy = crate.y + hoverOffset;
+    const isExplosive = crate.type === 'explosive';
+
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    // 1. Balloon Rope
+    ctx.beginPath();
+    ctx.moveTo(0, -18);
+    ctx.quadraticCurveTo(Math.sin(tick * 0.1) * 3, -35, 0, -50);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // 2. Buoyant Helium Balloon
+    ctx.save();
+    ctx.translate(0, -68);
+    const balloonPulse = 1 + Math.sin(tick * 0.08) * 0.05;
+    ctx.scale(balloonPulse, balloonPulse);
+
+    // Outer glow
+    ctx.beginPath();
+    ctx.arc(0, 0, 22, 0, Math.PI * 2);
+    ctx.fillStyle = isExplosive ? 'rgba(239, 68, 68, 0.25)' : 'rgba(6, 182, 212, 0.25)';
+    ctx.fill();
+
+    // Balloon body
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 18, 22, 0, 0, Math.PI * 2);
+    ctx.fillStyle = isExplosive ? '#ef4444' : '#06b6d4';
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2.5;
+    ctx.fill();
+    ctx.stroke();
+
+    // Balloon highlight gloss
+    ctx.beginPath();
+    ctx.ellipse(-6, -8, 4.5, 8, -Math.PI / 4, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+    ctx.fill();
+
+    // Balloon knot
+    ctx.beginPath();
+    ctx.moveTo(-4, 22);
+    ctx.lineTo(4, 22);
+    ctx.lineTo(0, 26);
+    ctx.closePath();
+    ctx.fillStyle = isExplosive ? '#b91c1c' : '#0891b2';
+    ctx.fill();
+    ctx.stroke();
+
+    // Balloon mini icon
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(isExplosive ? '💣' : '⚡', 0, 0);
+
+    ctx.restore();
+
+    // 3. Wooden / Hi-Tech Mystery Crate Box
+    const crateSize = 34;
+    const half = crateSize / 2;
+
+    // Glowing aura around box
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(-half - 3, -half - 3, crateSize + 6, crateSize + 6, 8);
+    ctx.fillStyle = isExplosive ? 'rgba(249, 115, 22, 0.35)' : 'rgba(14, 165, 233, 0.35)';
+    ctx.fill();
+    ctx.restore();
+
+    // Main Box
+    ctx.beginPath();
+    ctx.roundRect(-half, -half, crateSize, crateSize, 6);
+    ctx.fillStyle = isExplosive ? '#7c2d12' : '#0c4a6e';
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 3;
+    ctx.fill();
+    ctx.stroke();
+
+    // Inner bevel / metal corner braces
+    ctx.fillStyle = isExplosive ? '#ea580c' : '#0284c7';
+    ctx.beginPath();
+    ctx.roundRect(-half + 3, -half + 3, crateSize - 6, crateSize - 6, 4);
+    ctx.fill();
+
+    // Accent diagonal hazard lines or electric core
+    ctx.strokeStyle = isExplosive ? '#facc15' : '#e0f2fe';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-half + 6, -half + 6);
+    ctx.lineTo(half - 6, half - 6);
+    ctx.moveTo(half - 6, -half + 6);
+    ctx.lineTo(-half + 6, half - 6);
+    ctx.stroke();
+
+    // Center Badge
+    ctx.beginPath();
+    ctx.arc(0, 0, 11, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2;
+    ctx.fill();
+    ctx.stroke();
+
+    // Power-up Icon in Box
+    ctx.font = '14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(isExplosive ? '💣' : '⚡', 0, 1);
+
+    // 4. Floating Action Tag / Label below box
+    ctx.save();
+    const tagW = isExplosive ? 88 : 96;
+    const tagH = 17;
+    ctx.translate(0, half + 14);
+
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.roundRect(-tagW / 2 + 1, -tagH / 2 + 1, tagW, tagH, 5);
+    ctx.fill();
+
+    ctx.fillStyle = isExplosive ? '#f97316' : '#06b6d4';
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.roundRect(-tagW / 2, -tagH / 2, tagW, tagH, 5);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(isExplosive ? '🔥 EXPLOSIVO' : '⚡ 2X REBOTE', 0, 0);
+    ctx.restore();
+
+    ctx.restore();
+  });
+}
+
+// 14. POWER-UP AURA ON PROJECTILE (Visual Feedback while aiming and in flight)
+export function drawPowerUpAura(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  radius: number,
+  powerUpType: 'explosive' | 'double_bounce',
+  tick: number
+): void {
+  ctx.save();
+  ctx.translate(x, y);
+
+  if (powerUpType === 'explosive') {
+    // Fiery flaming corona with rotating plasma flares
+    const flares = 8;
+    const baseR = radius + 6;
+    ctx.rotate(tick * 0.08);
+
+    for (let f = 0; f < flares; f++) {
+      const a = (f * Math.PI * 2) / flares;
+      const flareLen = baseR + Math.sin(tick * 0.25 + f * 1.5) * 6;
+      ctx.beginPath();
+      ctx.arc(Math.cos(a) * flareLen, Math.sin(a) * flareLen, 4, 0, Math.PI * 2);
+      ctx.fillStyle = f % 2 === 0 ? '#ef4444' : '#f59e0b';
+      ctx.globalAlpha = 0.8;
+      ctx.fill();
+    }
+
+    // Outer pulsating fire glow
+    ctx.beginPath();
+    ctx.arc(0, 0, radius + 8 + Math.sin(tick * 0.2) * 3, 0, Math.PI * 2);
+    ctx.strokeStyle = '#f97316';
+    ctx.lineWidth = 3;
+    ctx.globalAlpha = 0.85;
+    ctx.stroke();
+
+    // Inner bright core
+    ctx.beginPath();
+    ctx.arc(0, 0, radius + 3, 0, Math.PI * 2);
+    ctx.strokeStyle = '#fde047';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  } else if (powerUpType === 'double_bounce') {
+    // Electric kinetic rings with neon sparks
+    ctx.rotate(-tick * 0.09);
+
+    // Expanding kinetic ring #1
+    const r1 = radius + 6 + Math.sin(tick * 0.18) * 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, r1, 0, Math.PI * 2);
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 3;
+    ctx.globalAlpha = 0.85;
+    ctx.stroke();
+
+    // Outer kinetic ring #2
+    const r2 = radius + 11 + Math.cos(tick * 0.18) * 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, r2, 0, Math.PI * 2);
+    ctx.strokeStyle = '#facc15';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Kinetic lightning sparks
+    for (let s = 0; s < 4; s++) {
+      const a = (s * Math.PI) / 2 + tick * 0.05;
+      const sx = Math.cos(a) * (radius + 12);
+      const sy = Math.sin(a) * (radius + 12);
+      ctx.beginPath();
+      ctx.arc(sx, sy, 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+    }
+  }
+
+  ctx.restore();
+}
+
+// 15. ANIMATED CHEERFUL SUN IN THE SKY (Rotating chromatic flares, sunglasses, glowing corona)
+export function drawAnimatedSun(
+  ctx: CanvasRenderingContext2D,
+  tick: number,
+  x: number = 770,
+  y: number = 72
+): void {
+  ctx.save();
+  ctx.translate(x, y);
+
+  // Pulsing golden aura glow
+  const pulse = Math.sin(tick * 0.05) * 4;
+  const sunRadius = 24 + pulse;
+
+  // Luminous outer aura
+  const auraGrad = ctx.createRadialGradient(0, 0, sunRadius * 0.5, 0, 0, sunRadius * 2.2);
+  auraGrad.addColorStop(0, 'rgba(253, 224, 71, 0.4)');
+  auraGrad.addColorStop(0.6, 'rgba(245, 158, 11, 0.15)');
+  auraGrad.addColorStop(1, 'rgba(245, 158, 11, 0)');
+  ctx.fillStyle = auraGrad;
+  ctx.beginPath();
+  ctx.arc(0, 0, sunRadius * 2.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 12 Rotating Starburst Sunburst Rays
+  ctx.save();
+  ctx.rotate(tick * 0.02);
+  const rays = 12;
+  for (let i = 0; i < rays; i++) {
+    const angle = (i * Math.PI * 2) / rays;
+    const rayLength = sunRadius + 14 + Math.sin(tick * 0.12 + i) * 5;
+    ctx.strokeStyle = i % 2 === 0 ? '#fde047' : '#f59e0b';
+    ctx.lineWidth = 3.5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(angle) * (sunRadius + 2), Math.sin(angle) * (sunRadius + 2));
+    ctx.lineTo(Math.cos(angle) * rayLength, Math.sin(angle) * rayLength);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // Sun Core (Warm golden gradient)
+  const sunGrad = ctx.createRadialGradient(-5, -5, 2, 0, 0, sunRadius);
+  sunGrad.addColorStop(0, '#fef08a');
+  sunGrad.addColorStop(0.6, '#facc15');
+  sunGrad.addColorStop(1, '#f59e0b');
+
+  ctx.fillStyle = sunGrad;
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.arc(0, 0, sunRadius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Cute Cool Cartoon Sunglasses!
+  ctx.fillStyle = '#18181b';
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 2;
+  // Left lens
+  ctx.beginPath();
+  ctx.moveTo(-15, -4);
+  ctx.lineTo(-2, -4);
+  ctx.lineTo(-3, 6);
+  ctx.lineTo(-14, 6);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  // Right lens
+  ctx.beginPath();
+  ctx.moveTo(2, -4);
+  ctx.lineTo(15, -4);
+  ctx.lineTo(14, 6);
+  ctx.lineTo(3, 6);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  // Bridge
+  ctx.beginPath();
+  ctx.moveTo(-2, -2);
+  ctx.lineTo(2, -2);
+  ctx.stroke();
+  // Lens specular glares
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(-12, -2);
+  ctx.lineTo(-7, 4);
+  ctx.moveTo(5, -2);
+  ctx.lineTo(10, 4);
+  ctx.stroke();
+
+  // Grinning Cartoon Smile
+  ctx.strokeStyle = '#78350f';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(0, 7, 7, 0.2, Math.PI - 0.2);
+  ctx.stroke();
+
+  // Pink Blush Cheeks
+  ctx.fillStyle = 'rgba(244, 63, 94, 0.45)';
+  ctx.beginPath();
+  ctx.arc(-14, 8, 3.5, 0, Math.PI * 2);
+  ctx.arc(14, 8, 3.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// 16. ANIMATED BIRDS GLIDING IN THE SKY (Wing flap cycles)
+export function drawAnimatedBirds(ctx: CanvasRenderingContext2D, tick: number): void {
+  ctx.save();
+  const birds = [
+    { base: 120, y: 55, speed: 0.8, scale: 0.85, flapSpeed: 0.18 },
+    { base: 520, y: 75, speed: 1.1, scale: 0.65, flapSpeed: 0.22 },
+  ];
+
+  birds.forEach((b, idx) => {
+    const bx = ((b.base + tick * b.speed) % 1000) - 60;
+    const by = b.y + Math.sin(tick * 0.04 + idx * 3) * 5;
+    const wingY = Math.sin(tick * b.flapSpeed + idx) * 7;
+
+    ctx.save();
+    ctx.translate(bx, by);
+    ctx.scale(b.scale, b.scale);
+
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = 'round';
+
+    // Left wing flapping up and down
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(-7, wingY, -14, wingY * 0.6);
+    // Right wing flapping up and down
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(7, wingY, 14, wingY * 0.6);
+    ctx.stroke();
+
+    ctx.restore();
+  });
+
+  ctx.restore();
+}
+
+// 17. ANIMATED BUTTERFLIES FLUTTERING (Dynamic 3D wing flapping & avoidance reactions)
+export function drawAnimatedButterflies(
+  ctx: CanvasRenderingContext2D,
+  tick: number,
+  activeProjectiles: { x: number; y: number }[] = []
+): void {
+  ctx.save();
+
+  const butterflies = [
+    { id: 0, baseX: 210, baseY: 385, color: '#f43f5e', wingColor: '#fda4af', scale: 0.9 },
+    { id: 1, baseX: 430, baseY: 375, color: '#06b6d4', wingColor: '#67e8f9', scale: 0.8 },
+    { id: 2, baseX: 680, baseY: 310, color: '#eab308', wingColor: '#fef08a', scale: 0.85 },
+    { id: 3, baseX: 330, baseY: 340, color: '#a855f7', wingColor: '#e9d5ff', scale: 0.75 },
+  ];
+
+  butterflies.forEach((b) => {
+    // Check threat proximity from flying projectiles
+    let threatened = false;
+    activeProjectiles.forEach((p) => {
+      if (Math.hypot(p.x - b.baseX, p.y - b.baseY) < 120) {
+        threatened = true;
+      }
+    });
+
+    const flightSpeed = threatened ? 0.25 : 0.05;
+    const loopX = Math.sin(tick * flightSpeed + b.id * 2) * (threatened ? 35 : 20);
+    const loopY = Math.cos(tick * (flightSpeed * 1.4) + b.id) * (threatened ? 25 : 12);
+    const bx = b.baseX + loopX;
+    const by = b.baseY + loopY - (threatened ? 30 : 0);
+
+    // 3D wing flapping scale
+    const flap = Math.abs(Math.sin(tick * (threatened ? 0.6 : 0.32) + b.id * 1.5));
+    const wingW = Math.max(0.15, flap) * 11 * b.scale;
+    const wingH = 10 * b.scale;
+
+    ctx.save();
+    ctx.translate(bx, by);
+
+    // Wings
+    ctx.fillStyle = b.wingColor;
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 1.2;
+
+    // Top-Left wing
+    ctx.beginPath();
+    ctx.ellipse(-wingW * 0.7, -wingH * 0.5, wingW, wingH * 0.8, -0.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Top-Right wing
+    ctx.beginPath();
+    ctx.ellipse(wingW * 0.7, -wingH * 0.5, wingW, wingH * 0.8, 0.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Bottom wings
+    ctx.fillStyle = b.color;
+    ctx.beginPath();
+    ctx.ellipse(-wingW * 0.55, wingH * 0.45, wingW * 0.75, wingH * 0.6, 0.3, 0, Math.PI * 2);
+    ctx.ellipse(wingW * 0.55, wingH * 0.45, wingW * 0.75, wingH * 0.6, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Butterfly body & antennae
+    ctx.fillStyle = '#18181b';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 1.8 * b.scale, 5 * b.scale, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#18181b';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-0.5, -4 * b.scale);
+    ctx.lineTo(-3.5 * b.scale, -8 * b.scale);
+    ctx.moveTo(0.5, -4 * b.scale);
+    ctx.lineTo(3.5 * b.scale, -8 * b.scale);
+    ctx.stroke();
+
+    if (threatened) {
+      // Little startle sweat droplet
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.arc(6, -10, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  });
+
+  ctx.restore();
+}
+
+// 18. ANIMATED WIND LEAVES & FLOWER PETALS (Tumbling through the breeze)
+export function drawAnimatedWindLeavesAndPetals(
+  ctx: CanvasRenderingContext2D,
+  tick: number,
+  windSpeed: number = 0,
+  groundY: number = 420
+): void {
+  ctx.save();
+
+  const particles = [
+    { type: 'leaf', color: '#16a34a', startX: 60, y: 190, speed: 1.2, rotSpeed: 0.08, size: 6 },
+    { type: 'petal', color: '#f472b6', startX: 220, y: 240, speed: 1.5, rotSpeed: 0.09, size: 4.5 },
+    { type: 'leaf', color: '#65a30d', startX: 380, y: 280, speed: 1.1, rotSpeed: 0.07, size: 5.5 },
+    { type: 'petal', color: '#fbcfe8', startX: 540, y: 210, speed: 1.4, rotSpeed: 0.1, size: 4 },
+    { type: 'leaf', color: '#eab308', startX: 700, y: 310, speed: 1.3, rotSpeed: 0.06, size: 6.5 },
+    { type: 'petal', color: '#ffffff', startX: 140, y: 350, speed: 1.6, rotSpeed: 0.11, size: 4 },
+  ];
+
+  particles.forEach((p, idx) => {
+    // Horizontal wind drift + sinusoidal vertical float
+    const hSpeed = Math.max(0.4, 0.8 + windSpeed * 0.3) * p.speed;
+    const px = ((p.startX + tick * hSpeed) % 940) - 20;
+    const py = p.y + Math.sin(tick * 0.04 + idx * 2) * 14;
+
+    if (py >= groundY - 5) return;
+
+    // 3D Tumbling via cosine width scale
+    const roll = Math.cos(tick * p.rotSpeed + idx);
+    const rot = tick * 0.03 + idx;
+
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(rot);
+    ctx.scale(roll, 1);
+
+    ctx.fillStyle = p.color;
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 1;
+
+    if (p.type === 'leaf') {
+      ctx.beginPath();
+      ctx.ellipse(0, 0, p.size, p.size * 0.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      // Stem vein
+      ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+      ctx.beginPath();
+      ctx.moveTo(-p.size + 1, 0);
+      ctx.lineTo(p.size - 1, 0);
+      ctx.stroke();
+    } else {
+      // Petal
+      ctx.beginPath();
+      ctx.arc(0, 0, p.size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  });
+
+  // Wind streaks across the sky when there is noticeable wind
+  if (Math.abs(windSpeed) > 1.2) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([25, 20]);
+    const streakY1 = 120 + Math.sin(tick * 0.05) * 8;
+    const streakY2 = 220 + Math.cos(tick * 0.04) * 8;
+    const driftX = (tick * 4) % 300;
+
+    ctx.beginPath();
+    ctx.moveTo(-50 + driftX, streakY1);
+    ctx.lineTo(400 + driftX, streakY1);
+    ctx.moveTo(250 + driftX, streakY2);
+    ctx.lineTo(750 + driftX, streakY2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
+// 19. DYNAMIC IN-FLIGHT PROJECTILE ANIMATIONS (Squash & stretch, screaming faces, wind streaks)
+export function drawAnimatedInFlightProjectile(
+  ctx: CanvasRenderingContext2D,
+  p: {
+    type: string;
+    radius: number;
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    rotation?: number;
+    powerUp?: string;
+  },
+  tick: number
+): void {
+  const speed = Math.hypot(p.vx, p.vy);
+  // Aerodynamic squash-and-stretch: stretches along trajectory, squashes laterally
+  const stretch = Math.min(0.4, speed * 0.02);
+
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.rotate(p.rotation || 0);
+  ctx.scale(1 + stretch, 1 / (1 + stretch * 0.7));
+
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = '#000000';
+
+  if (p.type === 'jake') {
+    // JAKE THE DOG IN FLIGHT: ears flapping furiously in high-speed wind, tongue flapping out!
+    ctx.fillStyle = '#f59e0b';
+    ctx.beginPath();
+    ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Floppy ears fluttering in the supersonic airflow!
+    const earFlap = Math.sin(tick * 0.45) * 9;
+    ctx.fillStyle = '#d97706';
+    ctx.beginPath();
+    ctx.ellipse(-p.radius - 4, -4 + earFlap * 0.3, 4, 10 + Math.abs(earFlap) * 0.3, -0.5, 0, Math.PI * 2);
+    ctx.ellipse(p.radius + 4, -4 - earFlap * 0.3, 4, 10 + Math.abs(earFlap) * 0.3, 0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Big round cartoon eyes wide with adrenaline
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(-5, -3, 6, 0, Math.PI * 2);
+    ctx.arc(5, -3, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Dilated black pupils looking forward
+    ctx.fillStyle = '#18181b';
+    ctx.beginPath();
+    ctx.arc(-3, -3, 3, 0, Math.PI * 2);
+    ctx.arc(7, -3, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Drooping jowls
+    ctx.fillStyle = '#f59e0b';
+    ctx.beginPath();
+    ctx.arc(-3.5, 4, 4, 0, Math.PI * 2);
+    ctx.arc(3.5, 4, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Black nose
+    ctx.fillStyle = '#18181b';
+    ctx.beginPath();
+    ctx.ellipse(0, 2, 2.5, 1.8, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Big excited flapping tongue!
+    const tongueWag = Math.sin(tick * 0.5) * 3;
+    ctx.fillStyle = '#f43f5e';
+    ctx.beginPath();
+    ctx.ellipse(4 + tongueWag, 7, 3.5, 5, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  } else if (p.type === 'grumosa') {
+    // LUMPY SPACE PRINCESS: Jelly wobble & rotating golden starburst on forehead!
+    const wobble = Math.sin(tick * 0.25) * 0.1;
+    ctx.scale(1 + wobble, 1 - wobble);
+
+    ctx.fillStyle = '#e879f9';
+    ctx.beginPath();
+    ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+    ctx.arc(-p.radius * 0.7, -p.radius * 0.25, p.radius * 0.5, 0, Math.PI * 2);
+    ctx.arc(p.radius * 0.7, -p.radius * 0.25, p.radius * 0.5, 0, Math.PI * 2);
+    ctx.arc(-p.radius * 0.45, p.radius * 0.55, p.radius * 0.5, 0, Math.PI * 2);
+    ctx.arc(p.radius * 0.45, p.radius * 0.55, p.radius * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Golden Forehead Star with rotating rays
+    ctx.save();
+    ctx.translate(0, -p.radius * 0.5);
+    ctx.rotate(tick * 0.1);
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath();
+    ctx.arc(0, 0, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#ca8a04';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+
+    // Sassy drama-queen screaming mouth
+    ctx.fillStyle = '#831843';
+    ctx.beginPath();
+    ctx.ellipse(0, 5, 3.5, 4.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  } else if (p.type === 'daisy') {
+    // DAISY THE BUNNY: bunny ears trailing backwards in slipstream!
+    ctx.fillStyle = '#f472b6';
+    ctx.beginPath();
+    ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Bunny ears blown back
+    ctx.beginPath();
+    ctx.ellipse(-7, -p.radius - 4, 4, 11, -0.4, 0, Math.PI * 2);
+    ctx.ellipse(7, -p.radius - 4, 4, 11, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#fbcfe8';
+    ctx.beginPath();
+    ctx.ellipse(-7, -p.radius - 4, 2, 7, -0.4, 0, Math.PI * 2);
+    ctx.ellipse(7, -p.radius - 4, 2, 7, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Screaming cute anime face
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(-4, -1, 3.5, 0, Math.PI * 2);
+    ctx.arc(4, -1, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.arc(-3, -1, 2, 0, Math.PI * 2);
+    ctx.arc(5, -1, 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Screaming open mouth
+    ctx.fillStyle = '#e11d48';
+    ctx.beginPath();
+    ctx.arc(0, 5, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  } else if (p.type === 'gumball') {
+    // GUMBALL: Cat ears pinned back, wind cheeks, screaming mouth with tongue!
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Aerodynamic cat ears pinned backwards flat
+    ctx.beginPath();
+    ctx.moveTo(-11, -p.radius + 3);
+    ctx.lineTo(-17, -p.radius - 2);
+    ctx.lineTo(-4, -p.radius + 1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(4, -p.radius + 1);
+    ctx.lineTo(17, -p.radius - 2);
+    ctx.lineTo(11, -p.radius + 3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Screaming eyes looking forward
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(-5, -2, 5, 0, Math.PI * 2);
+    ctx.arc(5, -2, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.arc(-3, -2, 2.5, 0, Math.PI * 2);
+    ctx.arc(6, -2, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Wind pushing cheeks back with pink speed blush
+    ctx.fillStyle = 'rgba(251, 113, 133, 0.7)';
+    ctx.beginPath();
+    ctx.arc(-8, 3, 2.5, 0, Math.PI * 2);
+    ctx.arc(8, 3, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Wide open screaming mouth: "¡¡WAAAAAH!!"
+    ctx.fillStyle = '#dc2626';
+    ctx.beginPath();
+    ctx.ellipse(0, 5, 4.5, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Pink tongue inside mouth
+    ctx.fillStyle = '#f472b6';
+    ctx.beginPath();
+    ctx.arc(0, 8, 3, Math.PI, Math.PI * 2);
+    ctx.fill();
+  } else if (p.type === 'darwin_split') {
+    // DARWIN: Rapidly vibrating fish tail fin, wide happy eyes!
+    ctx.fillStyle = '#fb923c';
+    ctx.beginPath();
+    ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Vibrating tail fin
+    const tailWiggle = Math.sin(tick * 0.6) * 8;
+    ctx.beginPath();
+    ctx.moveTo(-p.radius, 0);
+    ctx.lineTo(-p.radius - 8, -6 + tailWiggle);
+    ctx.lineTo(-p.radius - 8, 6 + tailWiggle);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Big happy fish eyes
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(3, -3, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.arc(5, -3, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Cheerful yelling mouth
+    ctx.fillStyle = '#dc2626';
+    ctx.beginPath();
+    ctx.arc(2, 4, 4, 0, Math.PI);
+    ctx.fill();
+    ctx.stroke();
+  } else if (p.type === 'bomb') {
+    // BOMB: Sizzling burning fuse cord with spitting flame sparks!
+    ctx.fillStyle = '#18181b';
+    ctx.beginPath();
+    ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Fuse cap
+    ctx.fillStyle = '#71717a';
+    ctx.fillRect(-3, -p.radius - 4, 6, 5);
+    ctx.strokeRect(-3, -p.radius - 4, 6, 5);
+
+    // Burning Wick cord with dynamic flame flare!
+    const wickAngle = -0.6 + Math.sin(tick * 0.3) * 0.2;
+    const flameX = -8 + Math.cos(wickAngle) * 6;
+    const flameY = -p.radius - 8 + Math.sin(wickAngle) * 6;
+
+    // Wick line
+    ctx.strokeStyle = '#d97706';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(0, -p.radius - 4);
+    ctx.quadraticCurveTo(-4, -p.radius - 9, flameX, flameY);
+    ctx.stroke();
+
+    // Spitting Fire Flare
+    const flameScale = 1 + Math.sin(tick * 0.4) * 0.3;
+    ctx.save();
+    ctx.translate(flameX, flameY);
+    ctx.scale(flameScale, flameScale);
+
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.arc(0, 0, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#f59e0b';
+    ctx.beginPath();
+    ctx.arc(0, 0, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#fef08a';
+    ctx.beginPath();
+    ctx.arc(0, 0, 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
+// 20. FULL-CANVAS LEVEL VICTORY CELEBRATION (Cascading rainbow confetti & swirling party streamers)
+export function drawFullCanvasCelebration(
+  ctx: CanvasRenderingContext2D,
+  tick: number,
+  width: number,
+  height: number
+): void {
+  ctx.save();
+
+  const confettiColors = ['#ef4444', '#f97316', '#facc15', '#22c55e', '#06b6d4', '#ec4899', '#a855f7'];
+
+  // 45 Multi-colored swirling confetti bits
+  for (let i = 0; i < 45; i++) {
+    const seed = i * 73;
+    const speed = 1.2 + ((seed % 10) / 10) * 1.5;
+    const cx = (seed * 17 + Math.sin(tick * 0.03 + i) * 35) % width;
+    const cy = ((tick * speed * 2 + seed * 23) % (height + 40)) - 20;
+
+    const rot = tick * 0.08 + i;
+    const flip = Math.cos(tick * 0.1 + i);
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(rot);
+    ctx.scale(flip, 1);
+
+    ctx.fillStyle = confettiColors[i % confettiColors.length];
+    ctx.fillRect(-4, -2.5, 8, 5);
+    ctx.restore();
+  }
+
+  // 12 Twisting ribbon streamers spiraling down
+  for (let s = 0; s < 12; s++) {
+    const streamX = (s * (width / 11) + Math.sin(tick * 0.04 + s) * 20) % width;
+    const streamY = ((tick * 2.5 + s * 70) % (height + 60)) - 30;
+
+    ctx.save();
+    ctx.translate(streamX, streamY);
+    ctx.strokeStyle = confettiColors[(s * 2) % confettiColors.length];
+    ctx.lineWidth = 3.5;
+    ctx.lineCap = 'round';
+
+    ctx.beginPath();
+    for (let k = 0; k < 5; k++) {
+      const ky = k * 8;
+      const kx = Math.sin(tick * 0.15 + k * 1.2 + s) * 9;
+      if (k === 0) ctx.moveTo(kx, ky);
+      else ctx.lineTo(kx, ky);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Golden Victory Sparkles in the air
+  for (let st = 0; st < 8; st++) {
+    const starX = (st * 110 + 60 + Math.sin(tick * 0.05 + st) * 20) % width;
+    const starY = 80 + (st % 3) * 60 + Math.cos(tick * 0.07 + st) * 15;
+    const starSize = 5 + Math.sin(tick * 0.15 + st) * 2.5;
+
+    ctx.save();
+    ctx.translate(starX, starY);
+    ctx.rotate(tick * 0.06 + st);
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath();
+    for (let p = 0; p < 4; p++) {
+      const a = (p * Math.PI) / 2;
+      ctx.lineTo(Math.cos(a) * starSize, Math.sin(a) * starSize);
+      const inA = a + Math.PI / 4;
+      ctx.lineTo(Math.cos(inA) * (starSize * 0.35), Math.sin(inA) * (starSize * 0.35));
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
 

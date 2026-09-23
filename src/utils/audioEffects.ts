@@ -286,6 +286,156 @@ class SoundManager {
     }
   }
 
+  // --- 7B. SYNCHRONIZED TARGET EXPLOSION & HIGH-ENERGY IMPACT AUDIO ---
+  public playTargetExplosion(intensity: 'normal' | 'heavy' | 'massive' = 'normal') {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    const dur = intensity === 'massive' ? 0.48 : intensity === 'heavy' ? 0.38 : 0.28;
+    const baseVol = (intensity === 'massive' ? 0.48 : intensity === 'heavy' ? 0.38 : 0.3) * this.volume;
+
+    // Layer 1: Sub-bass shockwave punch (immediate low rumble drop)
+    const subOsc = this.ctx.createOscillator();
+    const subGain = this.ctx.createGain();
+    subOsc.type = 'triangle';
+    subOsc.frequency.setValueAtTime(intensity === 'massive' ? 190 : 160, now);
+    subOsc.frequency.exponentialRampToValueAtTime(28, now + dur);
+
+    subGain.gain.setValueAtTime(baseVol * 1.3, now);
+    subGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+    subOsc.connect(subGain);
+    subGain.connect(this.ctx.destination);
+    subOsc.start(now);
+    subOsc.stop(now + dur + 0.02);
+
+    // Layer 2: Synthesized explosive noise blast (realistic cartoon explosion crackle)
+    try {
+      const bufferSize = Math.floor(this.ctx.sampleRate * dur);
+      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.26));
+      }
+
+      const noiseNode = this.ctx.createBufferSource();
+      noiseNode.buffer = buffer;
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(intensity === 'massive' ? 3600 : 2600, now);
+      filter.frequency.exponentialRampToValueAtTime(150, now + dur);
+
+      const noiseGain = this.ctx.createGain();
+      noiseGain.gain.setValueAtTime(baseVol * 1.15, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+      noiseNode.connect(filter);
+      filter.connect(noiseGain);
+      noiseGain.connect(this.ctx.destination);
+
+      noiseNode.start(now);
+    } catch {
+      // Fallback sawtooth burst
+      const saw = this.ctx.createOscillator();
+      const sawG = this.ctx.createGain();
+      saw.type = 'sawtooth';
+      saw.frequency.setValueAtTime(480, now);
+      saw.frequency.exponentialRampToValueAtTime(45, now + 0.22);
+      sawG.gain.setValueAtTime(baseVol, now);
+      sawG.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+      saw.connect(sawG);
+      sawG.connect(this.ctx.destination);
+      saw.start(now);
+      saw.stop(now + 0.24);
+    }
+
+    // Layer 3: Instant Sharp Attack Snap (zero latency click at 0ms)
+    const snap = this.ctx.createOscillator();
+    const snapG = this.ctx.createGain();
+    snap.type = 'sine';
+    snap.frequency.setValueAtTime(1200, now);
+    snap.frequency.exponentialRampToValueAtTime(220, now + 0.08);
+
+    snapG.gain.setValueAtTime(baseVol * 0.85, now);
+    snapG.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+    snap.connect(snapG);
+    snapG.connect(this.ctx.destination);
+    snap.start(now);
+    snap.stop(now + 0.09);
+
+    // Layer 4: Harmonic Target Chime / Pop (cheerful cartoon bullseye accent)
+    const chime = this.ctx.createOscillator();
+    const chimeG = this.ctx.createGain();
+    chime.type = 'triangle';
+    chime.frequency.setValueAtTime(intensity === 'massive' ? 1174.66 : 987.77, now); // D6 or B5
+    chime.frequency.exponentialRampToValueAtTime(1567.98, now + 0.12); // G6
+    chimeG.gain.setValueAtTime(baseVol * 0.5, now);
+    chimeG.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+    chime.connect(chimeG);
+    chimeG.connect(this.ctx.destination);
+    chime.start(now);
+    chime.stop(now + 0.26);
+  }
+
+  // --- 7C. POWER-UP COLLECTED & ACTIVATED ---
+  public playPowerUp() {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx) return;
+
+    const notes = [523.25, 659.25, 783.99, 1046.5, 1318.51]; // C5, E5, G5, C6, E6
+    const now = this.ctx.currentTime;
+    notes.forEach((freq, i) => {
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now + i * 0.05);
+
+      gain.gain.setValueAtTime(0.24 * this.volume, now + i * 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.05 + 0.2);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now + i * 0.05);
+      osc.stop(now + i * 0.05 + 0.22);
+    });
+  }
+
+  // --- 7D. KINETIC DOUBLE BOUNCE SPRING SFX ---
+  public playDoubleBounce() {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(320, now);
+    osc.frequency.exponentialRampToValueAtTime(1450, now + 0.16);
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(800, now);
+    filter.frequency.exponentialRampToValueAtTime(2400, now + 0.16);
+    filter.Q.setValueAtTime(4, now);
+
+    gain.gain.setValueAtTime(0.35 * this.volume, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.24);
+  }
+
   // --- 8. SLINGSHOT / CANNON LAUNCH (Tiro Parabólico) ---
   public playLaunch() {
     if (this.isMuted) return;

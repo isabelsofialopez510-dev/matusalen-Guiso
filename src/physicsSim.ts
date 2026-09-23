@@ -26,7 +26,8 @@ export function calcFreefallObject(
   mass: number,
   Cd: number,
   Area: number,
-  isVacuum: boolean
+  isVacuum: boolean,
+  rho: number = 1.225
 ): FreefallObjectState {
   if (isVacuum) {
     const impactTime = Math.sqrt((2 * H) / Math.max(0.1, g));
@@ -46,9 +47,10 @@ export function calcFreefallObject(
     };
   }
 
-  // Air resistance calculation
-  const rho = 1.225; // Air density in kg/m^3
-  const k = (0.5 * rho * Cd * Area) / Math.max(0.0001, mass);
+  // Air / Fluid resistance calculation
+  const effectiveRho = Math.max(0.001, rho); // Fluid density in kg/m^3
+  const effectiveCd = Math.max(0.001, Cd);
+  const k = (0.5 * effectiveRho * effectiveCd * Area) / Math.max(0.0001, mass);
   const vTerm = Math.sqrt(g / Math.max(1e-6, k));
 
   // Analytical integration for freefall with drag:

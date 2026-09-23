@@ -112,11 +112,11 @@ export const World4Parabolic: React.FC<World4ParabolicProps> = ({
             if (!soundPlayedOnLandingRef.current) {
               soundPlayedOnLandingRef.current = true;
               if (hitTarget) {
-                sfx.playImpact('target');
+                sfx.playTargetExplosion('massive');
                 sfx.playVictoryFanfare();
                 setCelebrationParticles(true);
               } else {
-                sfx.playImpact('heavy');
+                sfx.playTargetExplosion('normal');
               }
             }
             return tFlight;
@@ -683,20 +683,38 @@ export const World4Parabolic: React.FC<World4ParabolicProps> = ({
                 </g>
               )}
 
-              {/* Landing Comic Splash & Candies Bursting */}
+              {/* Landing Comic Explosion & Candies Bursting */}
               {hasLanded && (
                 <g transform="translate(0, 0)">
-                  <ellipse cx="0" cy="6" rx="34" ry="10" fill="#f43f5e" opacity="0.85" />
+                  {/* Expanding Shockwave Ring */}
+                  <ellipse cx="0" cy="4" rx="46" ry="14" fill="none" stroke="#fbbf24" strokeWidth="3" opacity="0.85" />
+                  <ellipse cx="0" cy="4" rx="34" ry="10" fill="#f43f5e" opacity="0.85" />
                   
-                  {/* Bursting colorful candies around impact */}
-                  <circle cx="-20" cy="-12" r="5" fill="#38bdf8" stroke="#ffffff" strokeWidth="1" />
-                  <circle cx="22" cy="-14" r="5" fill="#fb923c" stroke="#ffffff" strokeWidth="1" />
-                  <circle cx="-10" cy="-24" r="4.5" fill="#fbbf24" stroke="#ffffff" strokeWidth="1" />
-                  <circle cx="12" cy="-22" r="4.5" fill="#f43f5e" stroke="#ffffff" strokeWidth="1" />
-                  <circle cx="0" cy="-30" r="5" fill="#a855f7" stroke="#ffffff" strokeWidth="1" />
+                  {/* Comic Multi-point Starburst */}
+                  <polygon
+                    points="0,-36 9,-18 30,-22 16,-8 28,10 10,6 0,24 -10,6 -28,10 -16,-8 -30,-22 -9,-18"
+                    fill="#facc15"
+                    stroke="#141414"
+                    strokeWidth="2.5"
+                  />
+                  <polygon
+                    points="0,-22 5,-11 18,-14 10,-5 17,6 6,4 0,15 -6,4 -17,6 -10,-5 -18,-14 -5,-11"
+                    fill="#ffffff"
+                  />
 
-                  <text x="0" y="-38" textAnchor="middle" fill="#fbbf24" fontSize="12" fontWeight="black" fontFamily="monospace">
-                    💥 ¡¡POW!! 43m (1.6 s)
+                  {/* Bursting colorful candies and radiant sparks around impact */}
+                  <circle cx="-28" cy="-16" r="6" fill="#38bdf8" stroke="#ffffff" strokeWidth="1.5" />
+                  <circle cx="30" cy="-18" r="6" fill="#fb923c" stroke="#ffffff" strokeWidth="1.5" />
+                  <circle cx="-16" cy="-32" r="5" fill="#fbbf24" stroke="#ffffff" strokeWidth="1.5" />
+                  <circle cx="18" cy="-30" r="5" fill="#f43f5e" stroke="#ffffff" strokeWidth="1.5" />
+                  <circle cx="0" cy="-42" r="6.5" fill="#a855f7" stroke="#ffffff" strokeWidth="1.5" />
+                  <circle cx="-38" cy="2" r="4.5" fill="#22c55e" stroke="#ffffff" strokeWidth="1" />
+                  <circle cx="40" cy="0" r="4.5" fill="#ec4899" stroke="#ffffff" strokeWidth="1" />
+
+                  {/* Action Banner */}
+                  <rect x="-70" y="-66" width="140" height="22" rx="6" fill="#dc2626" stroke="#fef08a" strokeWidth="2" />
+                  <text x="0" y="-51" textAnchor="middle" fill="#fef08a" fontSize="10.5" fontWeight="black" fontFamily="monospace">
+                    💥 ¡¡BOOOM!! IMPACTO
                   </text>
                 </g>
               )}
